@@ -63,7 +63,8 @@ We are building a digital asset marketplace that is fair to everyone. Buyers can
 <p align="justify">
 To setup the repo, first fork the FairWheel repo, then clone the forked repository to create a copy on the local machine.
 </p>
- e.g:
+ e.g:   
+ 
   $ git clone https://github.com/Sheys11/FairWheel.git
 
 <p align="justify">
