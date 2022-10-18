@@ -34,15 +34,15 @@ We are building a digital asset marketplace that is fair to everyone. Buyers can
 #
 > ## Project Features
 
-- Gamified auction mechanism where buyers don't see the specific items they are bidding.
+- Gamified auction mechanism where buyers have fair chances of bidding on a claim to a Nft from a pool of multiples.
 
-- Semi-custodial logic of sellers digital assets.
+- Semi-custodial logic of sellers digital assets and profits.
 
 - Auctions are MEV resistant.
 
-- There 10 pools of closely-priced assets with the top pool holding the expensive assets. 
+- 10 pools of closely-priced assets with the top pool holding the expensive assets. 
 
-- Closely-priced assets are available in each pool with a floor price to start from.
+- Closely-priced assets are available in each pool with an aggregated floor price to start bid from.
 
 
 </p>
@@ -61,17 +61,16 @@ We are building a digital asset marketplace that is fair to everyone. Buyers can
 ## Repo Setup
 
 <p align="justify">
-To setup the repo, first fork the FairWheel repo, then clone the forked repository to create a copy on the local machine.
+The repo has two branches, we'll always push to the "dev" branch first and whenever the commits are reviewed and confirmed, it'll be merged to main.  so ensure to input:
 </p>
- e.g:   
- 
-  $ git clone https://github.com/Sheys11/FairWheel.git
+
+  $ git checkout - b "dev" 
 
 <p align="justify">
-Change directory to the cloned repo and set the original FairWheel repository as the "upstream" and your forked repository as the "origin" using gitbash.
+Before adding commits and pushing to the repo.
 </p>
-
-  $ git remote add upstream https://github.com/mainstreetlab/FairWheel.git
+  e.g:  
+  $ git push upstream dev
 #
 
 *Note: This repo uses Foundry, the original repo was cloned from https://github.com/smartcontractkit/foundry-starter-kit*
