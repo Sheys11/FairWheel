@@ -1,4 +1,9 @@
-*Note: This repo has been recently updated for Goerli*
+# FairWheel
+A non-custodial NFT marketplace that uses a gamified auction mechanism to sell NFTs to buyers
+
+
+
+*Note: This repo uses Foundry*
 
 # Foundry Starter Kit
 
