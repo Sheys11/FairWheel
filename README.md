@@ -168,8 +168,8 @@ You'll need to add the following variables to a `.env` file:
   <img src="https://drive.google.com/uc?export=view&id=1Gq-hPuwjwb3TOCH2dqUA93VxfyrbUDN6" alt="etherscan key"/>
 </p>
 
-
-#### Deploying
+#
+> #### Deploying
 
 ```
 make deploy-goerli contract=<CONTRACT_NAME>
