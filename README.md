@@ -5,29 +5,26 @@ A non-custodial NFT marketplace that uses a gamified auction mechanism to sell N
 - [Overview](#overview)
 - [Project Features](#project-features)
 - [Technologies](#technologies)
+- [Repo Setup](#repo-setup)
 - [Setup with Foundry](#setup-with-foundry)
-- [Requirements](#requirements)
-- [Env Setup](#env-setup)
 - [Setup the Frontend](#setup-the-frontend)
   - [Install Dependencies](#install-dependencies)
   - [Start Server](#start-server)
   - [Build the Frontend](#build-the-frontend)
-- [Testing the Smartcontract](#testing-the-smartcontract)
-- [Rhythm Protocol Contract Address](#nestdrive-contract-address)
+- [FairWheel Contract Address](#fairwheel-contract-address)
 - [Live Link](#live-link)
-- [Contributors](#contributors)
-- [Contributing to the project](#contributing-to-the-project)
+- [Contributions](#contributions)
 - [Thank You](#thank-you)
 - [TODO](#todo)
 #
 
-> ## Overview
+## Overview
 <p align="justify">
 A non-custodial NFT marketplace that uses a gamified auction mechanism to sell NFTs to buyers. The logic is based on the aggregation of the value of NFT's present in each pools to develop a floor price where every auction bid starts from.  
 </p>
 
 <p align="justify">
-We are building a digital asset marketplace that is fair to everyone. Buyers can buy NFTs without the fear of it depreciating due to no demand. The demand and supply are created automatically with this pool.
+We are building a digital asset marketplace that is fair to everyone. Buyers can buy NFTs without the fear of it depreciating due to no demand. FairWheel's pools will highly influence demand and supply.
 </p>
 
 <p align="justify">
@@ -59,6 +56,21 @@ We are building a digital asset marketplace that is fair to everyone. Buyers can
 | **`Next JS`**       | Frontend            |
 | **`Foundry`**       | Environment         |
 
+#
+
+## Repo Setup
+
+<p align="justify">
+To setup the repo, first fork the FairWheel repo, then clone the forked repository to create a copy on the local machine.
+</p>
+ e.g:
+  $ git clone https://github.com/Sheys11/FairWheel.git
+
+<p align="justify">
+Change directory to the cloned repo and set the original FairWheel repository as the "upstream" and your forked repository as the "origin" using gitbash.
+</p>
+
+  $ git remote add upstream https://github.com/mainstreetlab/FairWheel.git
 #
 
 *Note: This repo uses Foundry, the original repo was cloned from https://github.com/smartcontractkit/foundry-starter-kit*
@@ -107,7 +119,7 @@ Please install the following:
 And you probably already have `make` installed... but if not [try looking here.](https://askubuntu.com/questions/161104/how-do-i-install-make)
 
 #
-> #### Quickstart
+#### Quickstart
 
 ```sh
 git clone https://github.com/mainstreetlab/FairWheel
@@ -129,8 +141,7 @@ or
 forge test
 ```
 
-#
-> ### Deploying to a network
+### Deploying to a network
 
 Deploying to a network uses the [foundry scripting system](https://book.getfoundry.sh/tutorials/solidity-scripting.html), where you write your deploy scripts in solidity!
 
@@ -147,8 +158,18 @@ You'll need to add the following variables to a `.env` file:
     -   Additionally, if you want to deploy to a testnet, you'll need test ETH and/or LINK. You can get them from [faucets.chain.link](https://faucets.chain.link/).
 -   `ETHERSCAN_API_KEY`: If you want to verify on etherscan
 
-#
-> #### Deploying
+`To retrieve your etherscan key.`
+- Login to [etherscan](https://etherscan.io/) and hover over the dropdown arrow for your profile on the navbar.
+- Click on API keys and add to create a new project (optional step).
+- Once the project has been created, click on the copy button to copy the API key.
+- Paste it in the .env file
+
+<p align="center" width="100%">
+  <img src="https://drive.google.com/uc?export=view&id=1Gq-hPuwjwb3TOCH2dqUA93VxfyrbUDN6" alt="etherscan key"/>
+</p>
+
+
+#### Deploying
 
 ```
 make deploy-goerli contract=<CONTRACT_NAME>
@@ -205,8 +226,8 @@ deploy-<YOUR_CHAIN> :; @forge script script/${contract}.s.sol:Deploy${contract} 
 
 ```
 
-#
-> ### Security
+
+### Security
 
 The framework comes with slither parameters, a popular security framework from [Trail of Bits](https://www.trailofbits.com/). To use slither, you'll first need to [install python](https://www.python.org/downloads/) and [install slither](https://github.com/crytic/slither#how-to-install).
 
@@ -218,8 +239,8 @@ make slither
 
 And get your slither output. 
 
-#
-> ### Resources
+
+### Resources
 
 -   [Chainlink Documentation](https://docs.chain.link/)
 -   [Foundry Documentation](https://book.getfoundry.sh/)
@@ -254,7 +275,7 @@ $ npm run build
 ```
 #
 
-## Contributing
+## Contributions
 
 Contributions are always welcome! Open a PR or an issue!
 
