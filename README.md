@@ -263,8 +263,8 @@ Contributions are always welcome! Open a PR or an issue!
 
 ## Thank You!
 
-#
-> ## TODO
+
+ ## TODO
 
 [ ] A token wrapper NFT - ERC1155 to hold funds sent by buyer
 
