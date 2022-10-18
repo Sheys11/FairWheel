@@ -1,11 +1,69 @@
 # FairWheel
-A non-custodial NFT marketplace that uses a gamified auction mechanism to sell NFTs to buyers
+A non-custodial NFT marketplace that uses a gamified auction mechanism to sell NFTs to buyers.
+
+> ## Table of contents
+- [Overview](#overview)
+- [Project Features](#project-features)
+- [Technologies](#technologies)
+- [Setup with Foundry](#setup-with-foundry)
+- [Requirements](#requirements)
+- [Env Setup](#env-setup)
+- [Setup the Frontend](#setup-the-frontend)
+  - [Install Dependencies](#install-dependencies)
+  - [Start Server](#start-server)
+  - [Build the Frontend](#build-the-frontend)
+- [Testing the Smartcontract](#testing-the-smartcontract)
+- [Rhythm Protocol Contract Address](#nestdrive-contract-address)
+- [Live Link](#live-link)
+- [Contributors](#contributors)
+- [Contributing to the project](#contributing-to-the-project)
+- [Thank You](#thank-you)
+- [TODO](#todo)
+#
+
+> ## Overview
+<p align="justify">
+A non-custodial NFT marketplace that uses a gamified auction mechanism to sell NFTs to buyers. The logic is based on the aggregation of the value of NFT's present in each pools to develop a floor price where every auction bid starts from.  
+</p>
+
+<p align="justify">
+We are building a digital asset marketplace that is fair to everyone. Buyers can buy NFTs without the fear of it depreciating due to no demand. The demand and supply are created automatically with this pool.
+</p>
+
+<p align="justify">
+
+</p>
+
+#
+> ## Project Features
+
+- Gamified auction mechanism where buyers don't see the specific items they are bidding.
+
+- Semi-custodial logic of sellers digital assets.
+
+- Auctions are MEV resistant.
+
+- There 10 pools of closely-priced assets with the top pool holding the expensive assets. 
+
+- Closely-priced assets are available in each pool with a floor price to start from.
 
 
+</p>
 
-*Note: This repo uses Foundry*
+#
+> ## Technologies
+| <b><u>Stack</u></b> | <b><u>Usage</u></b> |
+| :------------------ | :------------------ |
+| **`Solidity`**      | Smart contract      |
+| **`React JS`**      | Frontend            |
+| **`Next JS`**       | Frontend            |
+| **`Foundry`**       | Environment         |
 
-# Foundry Starter Kit
+#
+
+*Note: This repo uses Foundry, the original repo was cloned from https://github.com/smartcontractkit/foundry-starter-kit*
+
+## Setup with Foundry
 
 <br/>
 <p align="center">
@@ -15,12 +73,11 @@ A non-custodial NFT marketplace that uses a gamified auction mechanism to sell N
 </p>
 <br/>
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/smartcontractkit/foundry-starter-kit)
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/mainstreetlab/FairWheel)
 
 Foundry Starter Kit is a repo that shows developers how to quickly build, test, and deploy smart contracts with one of the fastest frameworks out there, [foundry](https://github.com/gakonst/foundry)!
 
 
-- [Foundry Starter Kit](#foundry-starter-kit)
 - [Getting Started](#getting-started)
   - [Requirements](#requirements)
   - [Quickstart](#quickstart)
@@ -31,14 +88,12 @@ Foundry Starter Kit is a repo that shows developers how to quickly build, test, 
     - [Working with a local network](#working-with-a-local-network)
     - [Working with other chains](#working-with-other-chains)
 - [Security](#security)
-- [Contributing](#contributing)
-- [Thank You!](#thank-you)
-  - [Resources](#resources)
-    - [TODO](#todo)
+- [Resources](#resources)
 
-# Getting Started
+### Getting Started
 
-## Requirements
+#
+> #### Requirements
 
 Please install the following:
 
@@ -51,16 +106,18 @@ Please install the following:
 
 And you probably already have `make` installed... but if not [try looking here.](https://askubuntu.com/questions/161104/how-do-i-install-make)
 
-## Quickstart
+#
+> #### Quickstart
 
 ```sh
-git clone https://github.com/smartcontractkit/foundry-starter-kit
-cd foundry-starter-kit
+git clone https://github.com/mainstreetlab/FairWheel
+cd FairWheel
 make # This installs the project's dependencies.
 make test
 ```
 
-## Testing
+#
+> #### Testing
 
 ```
 make test
@@ -72,22 +129,26 @@ or
 forge test
 ```
 
-# Deploying to a network
+#
+> ### Deploying to a network
 
 Deploying to a network uses the [foundry scripting system](https://book.getfoundry.sh/tutorials/solidity-scripting.html), where you write your deploy scripts in solidity!
 
-## Setup
+#
+> #### Setup
 
-We'll demo using the Goerli testnet. (Go here for [testnet goerli ETH](https://faucets.chain.link/).)
+Here's a demo using the Goerli testnet. (Go here for [testnet goerli ETH](https://faucets.chain.link/).)
 
 You'll need to add the following variables to a `.env` file:
 
 -   `GOERLI_RPC_URL`: A URL to connect to the blockchain. You can get one for free from [Alchemy](https://www.alchemy.com/). 
+-   `POLYGON_RPC_URL`:The URL to connect to the polygon blockchain. You can get it on [Alchemy](https://www.alchemy.com/). 
 -   `PRIVATE_KEY`: A private key from your wallet. You can get a private key from a new [Metamask](https://metamask.io/) account
     -   Additionally, if you want to deploy to a testnet, you'll need test ETH and/or LINK. You can get them from [faucets.chain.link](https://faucets.chain.link/).
--   Optional `ETHERSCAN_API_KEY`: If you want to verify on etherscan
+-   `ETHERSCAN_API_KEY`: If you want to verify on etherscan
 
-## Deploying
+#
+> #### Deploying
 
 ```
 make deploy-goerli contract=<CONTRACT_NAME>
@@ -113,7 +174,8 @@ If you don't have an `ETHERSCAN_API_KEY`, you can also just run:
 
 These pull from the files in the `script` folder. 
 
-### Working with a local network
+#
+> ##### Working with a local network
 
 Foundry comes with local network [anvil](https://book.getfoundry.sh/anvil/index.html) baked in, and allows us to deploy to our local network for quick testing locally. 
 
@@ -133,7 +195,8 @@ make deploy-anvil contract=<CONTRACT_NAME>
 
 Similar to `deploy-goerli`
 
-### Working with other chains
+#
+> ##### Working with other chains
 
 To add a chain, you'd just need to make a new entry in the `Makefile`, and replace `<YOUR_CHAIN>` with whatever your chain's information is. 
 
@@ -142,9 +205,10 @@ deploy-<YOUR_CHAIN> :; @forge script script/${contract}.s.sol:Deploy${contract} 
 
 ```
 
-# Security
+#
+> ### Security
 
-This framework comes with slither parameters, a popular security framework from [Trail of Bits](https://www.trailofbits.com/). To use slither, you'll first need to [install python](https://www.python.org/downloads/) and [install slither](https://github.com/crytic/slither#how-to-install).
+The framework comes with slither parameters, a popular security framework from [Trail of Bits](https://www.trailofbits.com/). To use slither, you'll first need to [install python](https://www.python.org/downloads/) and [install slither](https://github.com/crytic/slither#how-to-install).
 
 Then, you can run:
 
@@ -154,21 +218,71 @@ make slither
 
 And get your slither output. 
 
-
-
-# Contributing
-
-Contributions are always welcome! Open a PR or an issue!
-
-# Thank You!
-
-## Resources
+#
+> ### Resources
 
 -   [Chainlink Documentation](https://docs.chain.link/)
 -   [Foundry Documentation](https://book.getfoundry.sh/)
 
-### TODO
 
-[ ] Add bash scripts to interact with contracts using `cast`
+#
 
-[ ] Make deploying contracts to `anvil` simpler
+## Setup the Frontend
+- First run the frontend on your local server to ensure it's fully functional before building for production.
+#
+> ### Install Dependencies
+- Setup and install dependencies
+
+```shell
+$ cd frontend
+
+$ npm install
+
+$ npm install react-scripts@latest    -or use next.js
+```
+#
+> ### Start Server
+- Start the server on localhost
+```
+$ npm run start
+```
+#
+> ### Build the Frontend
+- Create an optimized production build, which can be hosted on sites like Heroku, Netlify, Surge etc.
+```
+$ npm run build
+```
+#
+
+## Contributing
+
+Contributions are always welcome! Open a PR or an issue!
+
+
+#
+
+## Thank You!
+
+#
+> ## TODO
+
+[ ] A token wrapper NFT - ERC1155 to hold funds sent by buyer
+
+[ ] A registry contract for available tokens that can be used to pay purchase fees
+
+[ ] A fully functional frontend that can be interacted with
+#
+> ## FairWheel Contract Address
+
+- ****
+
+#  
+> ## Live Link
+  
+- ******
+#
+
+
+
+
+> ###### README Created by `MAINSTREET LAB` for FairWheel
