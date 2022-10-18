@@ -1,8 +1,8 @@
 {
-  "name": "foundry-starter-kit",
+  "name": "FairWheel",
   "version": "1.0.0",
-  "description": "Minimal Template for Foundry Projects",
-  "author": "Patrick Collins",
+  "description": "A Gamified Nft Auction Marketplace",
+  "author": "Mainstreet Lab",
   "license": "MIT",
   "files": [
     "src/**/*.sol"
