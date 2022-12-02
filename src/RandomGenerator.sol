@@ -3,9 +3,7 @@ pragma solidity^0.8.17;
 
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
-import {DataTypes} from './DataTypes.sol';
 import {PoolStorage} from './PoolStorage.sol';
-//import {DataTypes} from './DataTypes.sol';
 
 /**
  * @title RandomGenerator
@@ -50,6 +48,8 @@ contract RandomGenerator is VRFConsumerBaseV2, PoolStorage {
 
     ///@dev An array of objects
     uint256[] _objectsId;
+
+    uint256[] public s_randomWords;
 
     // map callers to requestIds
     mapping(uint256 => address) private s_callers;
@@ -113,7 +113,8 @@ contract RandomGenerator is VRFConsumerBaseV2, PoolStorage {
         uint256 requestId, 
         uint256[] memory randomWords
     ) internal override {
-        uint256 objectValue = (randomWords[0] % getObjectsNum()) + 1;
+        s_randomWords = randomWords;
+        uint256 objectValue = (s_randomWords[0] % getObjectsNum()) + 1;
         s_results[s_callers[requestId]] = objectValue;
         emit RandGenerated(requestId, objectValue);
     }

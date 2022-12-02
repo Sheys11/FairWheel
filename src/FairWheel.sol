@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 //import "@solmate/tokens/ERC721.sol";
 //import "@solmate/tokens/ERC20.sol";
 import {RandomGenerator} from './RandomGenerator.sol';
-import {DataTypes} from './DataTypes.sol';
+import {Status, Tag, Item, Auction} from './DataTypes.sol';
 import {PoolStorage} from './PoolStorage.sol';
 
 error BidFailed(string);
@@ -27,7 +27,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
 
 
     modifier ifAdmin() {
-        if (msg.sender == _admin) revert();
+        if (msg.sender != _admin) revert();
         _;
     }
 
@@ -37,7 +37,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
 =====================================================================================================
 */
     event BidSubmitted(
-        DataTypes.Tag indexed label, 
+        Tag indexed label, 
         uint256 indexed claimOnBid, 
         uint256 indexed bidAmount, 
         address bidder
@@ -47,8 +47,8 @@ contract FairWheel is PoolStorage, RandomGenerator {
         uint256 tokenId, 
         uint256 askPrice, 
         uint256 soldPrice, 
-        DataTypes.Tag indexed label, 
-        DataTypes.Status status, 
+        Tag indexed label, 
+        Status status, 
         address indexed seller, 
         address rightToClaim, 
         address nftRecipient, 
@@ -56,7 +56,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
     );
 
     event NewAuctionStarted(
-        DataTypes.Tag label, 
+        Tag label, 
         uint256 indexed claimsOnAuction, 
         uint256 indexed auctionTimeLeft, 
         uint256 indexed highestBid, 
@@ -65,14 +65,14 @@ contract FairWheel is PoolStorage, RandomGenerator {
 
     event NewBidMade(
         uint8 label, 
-        DataTypes.Auction indexed claimsOnAuction, 
+        Auction indexed claimsOnAuction, 
         uint256 indexed auctionTimeLeft, 
         uint256 indexed bidAmount, 
         address highestBidder
     );
 
     event AuctionHasEnded(
-        DataTypes.Auction claim
+        Auction claim
     );
 
     event DefaultBidPeriodUpdated(
@@ -96,7 +96,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
     );
 
     event NftWithdrawn(
-        DataTypes.Item indexed item, 
+        Item indexed item, 
         uint8 indexed label, 
         uint256 indexed claim
     );
@@ -105,12 +105,17 @@ contract FairWheel is PoolStorage, RandomGenerator {
         uint256 tokenId,
         uint256 askPrice,
         uint256 indexed soldPrice,
-        DataTypes.Tag label,
-        DataTypes.Status status,
+        Tag label,
+        Status status,
         address seller,
         address rightToClaim,
         address indexed nftRecipient,
         address indexed nftContract
+    );
+
+    event FundsReceived(
+        address sender, 
+        uint256 amount
     );
 
 
@@ -134,20 +139,20 @@ contract FairWheel is PoolStorage, RandomGenerator {
 */
 
     /**
-     * @notice Allows the deposits of NFTs into the pool
+     * @notice Allows the deposits of NFTs into the pools
      * @dev The current implementation doesn't use the tokenWrapper Nft yet...
      * @param _nftAddress - The address of the NFT
      * @param _tokenId - The Nft's tokenId
      * @param _askPrice - The asking price of a seller
      */
-    function sellNFT(
+    function depositNFT(
         address _nftAddress, 
         uint256 _tokenId, 
         uint128 _askPrice
     ) public {
         require(_nftAddress != address(0), "INVALID_ADDRESS");
         require(_tokenId != 0, "INVALID_TokenID");
-        require(_askPrice >= 1e16, "PRICE_IS_TOO_LOW");
+        require(_askPrice >= uint128(_priceLimit), "PRICE_IS_TOO_LOW");
         require(!_deposited[_nftAddress]);
 
         /// @dev Only whitelisted NFT collection will be allowed to be sold 
@@ -172,7 +177,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
         ///@dev The tokenWrapper Nft call - Hasn't been implemented yet
         //_mintbeeCard(uint _askPrice);
 
-        DataTypes.Tag label;
+        Tag label;
 
         uint256 deposit = _itemId;
 
@@ -181,7 +186,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
             _askPrice,
             0,
             label,
-            DataTypes.Status.OFF_LIST,
+            Status.OFF_LIST,
     //        beeCardId,
             payable(msg.sender),
             payable(0),
@@ -189,7 +194,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
             _nftAddress
         );
 
-        //this must update the struct
+        //this will update the struct
         label = _addLabel(deposit);
 
         _itemId++;
@@ -199,7 +204,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
             _askPrice, 
             0, 
             label, 
-            DataTypes.Status.OFF_LIST, 
+            Status.OFF_LIST, 
             payable(msg.sender), 
             payable(0), 
             payable(0), 
@@ -213,7 +218,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
      * @dev Check for any excess of memory/gas used. Function is made public so any contract can call it
      * @param _label - The specific label(pool) to bid from
      */
-    function startNewAuction(DataTypes.Tag _label) public {
+    function startNewAuction(Tag _label) public {
     
         uint256 i; uint256 j;
 
@@ -222,9 +227,9 @@ contract FairWheel is PoolStorage, RandomGenerator {
         uint256[] memory offList = new uint[](j);
 
         while(i < _itemId){
-            DataTypes.Item memory item = _items[i];
+            Item memory item = _items[i];
             if(item.label == _label){
-                if(item.status == DataTypes.Status.OFF_LIST){
+                if(item.status == Status.OFF_LIST){
                     offList[j] = i;
                     j++;
                 } 
@@ -243,12 +248,12 @@ contract FairWheel is PoolStorage, RandomGenerator {
         require(approved);
         
         uint256 rand = RandomGenerator.generateRandomObject(
-            address(this), offList
+            msg.sender, offList
         ); 
 
-        _items[rand].status = DataTypes.Status.ON_LIST;
+        _items[rand].status = Status.ON_LIST;
 
-        _auctions[_claimsOnAuction] = DataTypes.Auction({
+        _auctions[_claimsOnAuction] = Auction({
             highestBid: floorPrice,
             label: _label,
             auctionTimeLeft: _defaultAuctionBidPeriod,
@@ -282,9 +287,9 @@ contract FairWheel is PoolStorage, RandomGenerator {
         uint256 _bidAmount
     ) public {
         require(_bidAmount != 0, "INVALID_INPUT");
-        require(_onAuction[_claimToBidOn] = true, "ITEM_NOT_ON_AUCTION");
+        require(_onAuction[_claimToBidOn] == true, "ITEM_NOT_ON_AUCTION");
 
-        DataTypes.Auction storage claim = _auctions[_claimToBidOn];
+        Auction storage claim = _auctions[_claimToBidOn];
         
         require(uint8(claim.label) == _label, "WRONG_POOL");
         
@@ -332,12 +337,12 @@ contract FairWheel is PoolStorage, RandomGenerator {
             if(uint8(_auctions[index].label) == _label){
                 if(_timeLeft(index) == 0){
                     uint256 randomId = _deliverItem(_label);
-                    DataTypes.Item storage item = _items[randomId];
-                    DataTypes.Auction memory claim = _auctions[index];
+                    Item storage item = _items[randomId];
+                    Auction memory claim = _auctions[index];
 
                     item.rightToClaim = claim.highestBidder;
                     item.soldPrice = claim.highestBid;
-                    item.status = DataTypes.Status.OUT;
+                    item.status = Status.OUT;
                 }
             }
 
@@ -362,16 +367,16 @@ contract FairWheel is PoolStorage, RandomGenerator {
         uint256 _claim, 
         address _nftRecipient
     ) external {
-        DataTypes.Auction memory claim = _auctions[_claim];
+        Auction memory claim = _auctions[_claim];
         require(msg.sender == claim.highestBidder, "WRONG_AUCTION_ID");
         assignClaimingRights(_label);
 
         uint256 i;
         while(i < _itemId){
-            DataTypes.Item storage item = _items[i];
+            Item storage item = _items[i];
 
             if(uint8(_items[i].label) == _label && 
-            item.status == DataTypes.Status.OUT){
+            item.status == Status.OUT){
                 
                 if(item.rightToClaim == claim.highestBidder && 
                 item.soldPrice == claim.highestBid){
@@ -400,6 +405,12 @@ contract FairWheel is PoolStorage, RandomGenerator {
         );
     }
 
+    receive() external payable {
+        emit FundsReceived(msg.sender, msg.value);
+    }
+
+   
+
 /*
 =====================================================================================================
 ======================================= INTERNAL FUNCTIONS ==========================================
@@ -411,32 +422,32 @@ contract FairWheel is PoolStorage, RandomGenerator {
     ///     need to save gas too - current gas is almost 94k
     ///@param _item - The address of the NFT
     ///@return item.label - the assigned label
-    function _addLabel(uint256 _item) internal returns(DataTypes.Tag){
-        DataTypes.Item storage item = _items[_item];
+    function _addLabel(uint256 _item) internal returns(Tag){
+        Item storage item = _items[_item];
  
         if(item.askPrice < _priceTags[0]){
             if(item.askPrice >= _priceTags[1]){
-                item.label = DataTypes.Tag.TIER_TWO;  
+                item.label = Tag.TIER_TWO;  
             } else if(item.askPrice >= _priceTags[2]){
-                item.label = DataTypes.Tag.TIER_THREE;
+                item.label = Tag.TIER_THREE;
             } else if(item.askPrice >= _priceTags[3]){
-                item.label = DataTypes.Tag.TIER_FOUR;
+                item.label = Tag.TIER_FOUR;
             } else if(item.askPrice >= _priceTags[4]){
-                item.label = DataTypes.Tag.TIER_FIVE;
+                item.label = Tag.TIER_FIVE;
             } else if(item.askPrice >= _priceTags[5]){
-                item.label = DataTypes.Tag.TIER_SIX;
+                item.label = Tag.TIER_SIX;
             } else if(item.askPrice >= _priceTags[6]){
-                item.label = DataTypes.Tag.TIER_SEVEN;
+                item.label = Tag.TIER_SEVEN;
             } else if(item.askPrice >= _priceTags[7]){
-                item.label = DataTypes.Tag.TIER_EIGHT;
+                item.label = Tag.TIER_EIGHT;
             } else if(item.askPrice >= _priceTags[8]){
-                item.label = DataTypes.Tag.TIER_NINE;
+                item.label = Tag.TIER_NINE;
             } else if(item.askPrice >= _priceTags[9]){
-                item.label = DataTypes.Tag.BOTTOM_T;
+                item.label = Tag.BOTTOM_T;
             }
         }
         
-        item.label = DataTypes.Tag.TIER_ONE;
+        item.label = Tag.TIER_ONE;
 
         return item.label;
     }
@@ -448,7 +459,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
     ///     should count!
     ///     But the "if" statement code line had that in check. Hence the rational "<" instead of "<="
     function _timeLeft(uint256 _claim) internal returns(uint32) {
-        DataTypes.Auction storage claim = _auctions[_claim];
+        Auction storage claim = _auctions[_claim];
         
         if(claim.auctionTimeLeft < uint32(block.timestamp)){
             _onAuction[_claim] = false;
@@ -468,18 +479,18 @@ contract FairWheel is PoolStorage, RandomGenerator {
     ///     Calculation still need a math library to avoid rounded figures
     ///@param _label The pool label
     ///@return floorPrice The average price of an Nft from the pool
-    function _getFloorPrice(DataTypes.Tag _label) private view returns(uint256){
+    function _getFloorPrice(Tag _label) private view returns(uint256){
        uint256 i; uint256 num; uint256 amount;
        while(i < _itemId){
-        DataTypes.Item memory item = _items[i];
+        Item memory item = _items[i];
         if(item.label == _label){
-            if(item.status == DataTypes.Status.OFF_LIST){
+            if(item.status == Status.OFF_LIST){
                 num = num + 1;
                 amount = amount + item.askPrice;
             }
             
             while(i < _claimsOnAuction){
-                DataTypes.Auction memory claim = _auctions[i];
+                Auction memory claim = _auctions[i];
                 if(claim.label == _label){
                     num = num + 1;
                     amount = amount + claim.highestBid;
@@ -510,7 +521,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
 
         while(i < _itemId){
             if(uint8(_items[i].label) == _label){
-                if(_items[i].status == DataTypes.Status.ON_LIST){
+                if(_items[i].status == Status.ON_LIST){
                     itemsList[j] = i;
                     j++;
                 }
@@ -522,7 +533,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
         }
 
         uint256 rand = RandomGenerator.generateRandomObject(
-            address(this), itemsList
+            msg.sender, itemsList
         );
 
         // a placeholder to remove objects if random generator inheritance doesn't work during tests
@@ -540,7 +551,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
         uint256 _item, 
         address _nftRecipient
     ) internal {
-        DataTypes.Item storage item = _items[_item];
+        Item storage item = _items[_item];
 
         item.nftRecipient = _getNftRecipient(_item, _nftRecipient);
 
@@ -571,23 +582,36 @@ contract FairWheel is PoolStorage, RandomGenerator {
         );
     }
 
-    function _payFeeAndSeller(DataTypes.Item memory _item) internal {
+    function _payFeeAndSeller(Item memory _item) internal {
         
         uint256 fee = _getPortionOfBid(_item.soldPrice);
 
-        _payout(_item, (_item.soldPrice - fee));
+        _payout(_item, (_item.soldPrice - fee), fee);
     }
 
 
     /// @dev Originally, it should be paid to the BeeCard - token wrapper NFT(ERC1155) 
     ///      But it hasn't been implemented yet.
     function _payout(
-        DataTypes.Item memory _item, 
-        uint256 _amount
+        Item memory _item, 
+        uint256 _amount,
+        uint256 _fee
     ) internal {
         
         //    payable(msg.sender).approve(address(this), _tokenAddress)_item.BeeCardId);
         
+        //Pays the fee to the contract
+        (bool received, ) = payable(address(this)).call{
+            value: _fee,
+            gas: 20000
+        }("");
+ //       require(received);
+        if(!received){
+            (bool done) = IERC20(_tokenAddress).transfer(
+                address(this), _fee);
+            require(done);
+        }
+
         // An ETH call - attempt to send the funds to the recipient
         (bool success, ) = payable(_item.seller).call{
             value: _amount,
@@ -600,21 +624,22 @@ contract FairWheel is PoolStorage, RandomGenerator {
                 value: _amount,
                 gas: 20000
             }("");
-
-        //if it fails, try an erc20 token(WETH) || send it to this contract 
-        if (!sent) {
-            (bool paid) = IERC20(_tokenAddress).transferFrom(
-                msg.sender, _item.seller, _amount) || IERC20(
-                    _tokenAddress).transfer(address(this), _amount
-                );
+            
+            //if it fails, try an erc20 token(WETH) || send it to this contract
+            if (!sent) {
+                (bool paid) = IERC20(_tokenAddress).transferFrom(
+                    msg.sender, _item.seller, _amount) || IERC20(
+                        _tokenAddress).transfer(address(this), _amount
+                    );
+                        
                 require(paid);
             }
+
+            //    burn(_item.BeeCardId);
+            //Update their credit on the contract so they can pull it later
+            
+            _failedTransferCredits[_item.seller] = _failedTransferCredits[_item.seller] + _amount;
         }
-
-        //    burn(_item.BeeCardId);
-
-        //Update their credit on the contract so they can pull it later
-        _failedTransferCredits[_item.seller] = _failedTransferCredits[_item.seller] + _amount;
     }
 
     function _resetAll(
@@ -636,26 +661,23 @@ contract FairWheel is PoolStorage, RandomGenerator {
         uint i = _index;
         while(i < _itemId){
             _items[i] = _items[i + 1]; 
-            
             unchecked {
                 i++;  
             }
-            
             delete _items[i];
-
            _itemId = _itemId - 1; 
         }   
     } 
 
     function _removeClaim(uint _index) internal {
         uint i = _index;
-        while(i < _claimsOnAuction - 1){
+        while(i < _claimsOnAuction){
            _auctions[i] = _auctions[i + 1]; 
             unchecked {
                 i++;  
             }
            delete _auctions[i];
-          // _claimsOnAuction = _claimsOnAuction - 1; 
+          _claimsOnAuction = _claimsOnAuction - 1; 
         }   
     } 
 
@@ -666,7 +688,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
 */    
 
     ///@dev Only Admin can update priceTag 
-    ///@return _priceTag
+    ///@return _priceTags[_priceTagId]
     function setPriceTag(
         uint8 _priceTagId, 
         uint256 _value
@@ -674,6 +696,16 @@ contract FairWheel is PoolStorage, RandomGenerator {
         require(_value != 0, "INVALID_INPUT");
         _priceTags[_priceTagId] = _value * 1e18;
         return _priceTags[_priceTagId];
+    }
+
+    ///@dev Only Admin can update priceLimit 
+    ///@return _priceLimit
+    function setPriceLimit(
+        uint64 _value
+    ) ifAdmin external returns(uint64) {
+        require(_value != 0, "INVALID_INPUT");
+        _priceLimit = _value;
+        return _priceLimit;
     }
     
     function setDefaultBidPeriod(uint256 _newTime) ifAdmin external {

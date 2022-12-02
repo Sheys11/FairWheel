@@ -1,6 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity^0.8.17;
-import {DataTypes} from './DataTypes.sol';
+import {Item, Auction} from './DataTypes.sol';
 
 /**
  * @title PoolStorage
@@ -9,9 +9,10 @@ import {DataTypes} from './DataTypes.sol';
  * This contract might be incomplete/unoptimized and could need some other useful variables
  */
 contract PoolStorage {
+    
     //Maps of the Item structure to indices of _items 
     ///@dev using _itemId as an index - an efficient way of saving gas (_ItemId => Item)
-    mapping(uint256 => DataTypes.Item) internal _items;
+    mapping(uint256 => Item) internal _items;
 
     //Maps of deposited NftAddress to a boolean value 
     mapping(address => bool) internal _deposited;
@@ -22,7 +23,7 @@ contract PoolStorage {
     //Maps of the Aucton structure to indices of _auctions
     ///@dev using _claimsOnAuction as an index - 
     ///     an efficient way of saving gas (_claimsOnAuction => Auction)
-    mapping(uint256 => DataTypes.Auction) internal _auctions;
+    mapping(uint256 => Auction) internal _auctions;
 
     //Maps of Failed Nft transaction value to seller's address
     mapping(address => uint256) internal _failedTransferCredits;
@@ -38,6 +39,9 @@ contract PoolStorage {
 
     //Indices of _auction mappings
     uint256 internal _claimsOnAuction;
+
+    //Set protocol's item price limit
+    uint64 _priceLimit;
     
     //Set prices that differentiate pools
     uint256[10] internal _priceTags;
