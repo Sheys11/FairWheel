@@ -28,7 +28,7 @@ We are building a digital asset marketplace that is fair to everyone. Buyers can
 </p>
 
 <p align="justify">
-
+ 
 </p>
 
 #
