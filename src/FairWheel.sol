@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 ///@dev would use solmate for gas optimisation later but it's openzeppelin for now for better understanding
 //import "@solmate/tokens/ERC721.sol";
 //import "@solmate/tokens/ERC20.sol";
+//import {WETH} from "@solmate/tokens/WETH.sol";
 import {RandomGenerator} from './RandomGenerator.sol';
 import {Status, Tag, Item, Auction} from './DataTypes.sol';
 import {PoolStorage} from './PoolStorage.sol';
@@ -20,6 +21,9 @@ error BidFailed(string);
  * This contract isn't complete/optimized and should have other useful features like being upgradeable
  */
 contract FairWheel is PoolStorage, RandomGenerator {
+  //  using SafeTransferLib for ERC20;
+
+    //WETH public weth; 
 
     IERC20 public _tokenAddress;
 
@@ -43,7 +47,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
         address bidder
     );
 
-    event Deposited(
+    event NFTDeposited(
         uint256 tokenId, 
         uint256 askPrice, 
         uint256 soldPrice, 
@@ -167,9 +171,13 @@ contract FairWheel is PoolStorage, RandomGenerator {
             require(_askPrice <= DIAXfloor_MA)
         } */
 
-        IERC721(_nftAddress).transferFrom(
+        //solmate's transfer function
+        //ERC721(_nftAddress).safeTransferFrom(msg.sender, address(this), _tokenId);
+
+        bool successsful = IERC721(_nftAddress).transferFrom(
             msg.sender, address(this), _tokenId
         );
+        require(successsful);
         
         
         _deposited[_nftAddress] = true;
@@ -181,7 +189,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
 
         uint256 deposit = _itemId;
 
-        _items[deposit] = DataTypes.Item(
+        _items[deposit] = Item(
             _tokenId,
             _askPrice,
             0,
@@ -199,7 +207,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
 
         _itemId++;
 
-        emit Deposited(
+        emit NFTDeposited(
             _tokenId, 
             _askPrice, 
             0, 
@@ -241,6 +249,9 @@ contract FairWheel is PoolStorage, RandomGenerator {
         }
 
         uint256 floorPrice = _getFloorPrice(_label);
+
+        //_tokenAddress.safeApprove(address(this), floorPrice);
+        //
         
         (bool approved) = IERC20(_tokenAddress).approve(
             address(this), floorPrice
@@ -304,6 +315,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
                 ), "YOUR_BID_IS < _minBidIncreasePercentage_OF_CURRENT_BID"
             );
             
+            //_tokenAddress.safeApprove(address(this), _bidAmount);
             (bool done) = IERC20(_tokenAddress).approve(
                 address(this), _bidAmount
             );
@@ -358,7 +370,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
 
 
     ///@notice Allows highest bidder to claim their Nft
-    ///@dev Check if there's any excess use of memory/gas
+    ///@dev Check if there's any excess use of memory/gas 
     ///@param _label The pool label in an uint
     ///@param _claim The Id of the auction won
     ///@param _nftRecipient A recipient address where the Nft would be transferred to
@@ -373,7 +385,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
 
         uint256 i;
         while(i < _itemId){
-            Item storage item = _items[i];
+            Item memory item = _items[i];
 
             if(uint8(_items[i].label) == _label && 
             item.status == Status.OUT){
@@ -381,6 +393,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
                 if(item.rightToClaim == claim.highestBidder && 
                 item.soldPrice == claim.highestBid){
                     
+                    //_tokenAddress.safeApprove(address(this), item.soldPrice);
                     (bool checked) = IERC20(_tokenAddress).approve(
                         address(this), item.soldPrice
                     );
@@ -424,43 +437,52 @@ contract FairWheel is PoolStorage, RandomGenerator {
     ///@return item.label - the assigned label
     function _addLabel(uint256 _item) internal returns(Tag){
         Item storage item = _items[_item];
+        uint256[] memory priceTags = _priceTags;
  
-        if(item.askPrice < _priceTags[0]){
-            if(item.askPrice >= _priceTags[1]){
-                item.label = Tag.TIER_TWO;  
-            } else if(item.askPrice >= _priceTags[2]){
-                item.label = Tag.TIER_THREE;
-            } else if(item.askPrice >= _priceTags[3]){
-                item.label = Tag.TIER_FOUR;
-            } else if(item.askPrice >= _priceTags[4]){
-                item.label = Tag.TIER_FIVE;
-            } else if(item.askPrice >= _priceTags[5]){
-                item.label = Tag.TIER_SIX;
-            } else if(item.askPrice >= _priceTags[6]){
-                item.label = Tag.TIER_SEVEN;
-            } else if(item.askPrice >= _priceTags[7]){
-                item.label = Tag.TIER_EIGHT;
-            } else if(item.askPrice >= _priceTags[8]){
-                item.label = Tag.TIER_NINE;
-            } else if(item.askPrice >= _priceTags[9]){
-                item.label = Tag.BOTTOM_T;
-            }
+        if(item.askPrice < priceTags[0]){
+            return item.label = Tag.TIER_ONE;
+        }
+        if(item.askPrice >= priceTags[1]){
+            return item.label = Tag.TIER_TWO;  
+        } 
+        if(item.askPrice >= priceTags[2]){
+            return item.label = Tag.TIER_THREE;
+        } 
+        if(item.askPrice >= priceTags[3]){
+            return item.label = Tag.TIER_FOUR;
+        } 
+        if(item.askPrice >= priceTags[4]){
+            return item.label = Tag.TIER_FIVE;
+        }  
+        if(item.askPrice >= priceTags[5]){
+            return item.label = Tag.TIER_SIX;
+        } 
+        if(item.askPrice >= priceTags[6]){
+            return item.label = Tag.TIER_SEVEN;
+        } 
+        if(item.askPrice >= priceTags[7]){
+            return item.label = Tag.TIER_EIGHT;
+        } 
+        if(item.askPrice >= priceTags[8]){
+            return item.label = Tag.TIER_NINE;
+        } 
+        if(item.askPrice >= priceTags[9]){
+            return item.label = Tag.BOTTOM_T;
         }
         
-        item.label = Tag.TIER_ONE;
+       // item.label = Tag.TIER_ONE;
 
-        return item.label;
+       // return item.label;
     }
 
     
     ///@dev Checks if auction is still on - Auction time is 24 hrs
-    ///     The wrapped block.timestamp in uint32 only compares with the first 4 bytes 
-    ///     of the entire timestamp. Not sure if that really makes it fair - if every sec
-    ///     should count!
-    ///     But the "if" statement code line had that in check. Hence the rational "<" instead of "<="
+    ///     The wrapped block.timestamp in uint32 compares with the last 4 bytes 
+    ///     of the entire timestamp.
     function _timeLeft(uint256 _claim) internal returns(uint32) {
         Auction storage claim = _auctions[_claim];
         
+        //Still skeptical about this comparison
         if(claim.auctionTimeLeft < uint32(block.timestamp)){
             _onAuction[_claim] = false;
             
@@ -565,6 +587,13 @@ contract FairWheel is PoolStorage, RandomGenerator {
             item.tokenId
         );
 
+        /* solmate's transfer function
+        ERC721(item.nftContract).safeTransferFrom(
+            address(this),
+            item.nftRecipient,
+            item.tokenId
+        ); */
+
         _deposited[item.nftContract] = false;
 
        // _resetAll(item);
@@ -598,7 +627,9 @@ contract FairWheel is PoolStorage, RandomGenerator {
         uint256 _fee
     ) internal {
         
-        //    payable(msg.sender).approve(address(this), _tokenAddress)_item.BeeCardId);
+        //payable(msg.sender).approve(address(this), _tokenAddress)_item.BeeCardId);
+        // safeTransferETH(address(this), _fee);
+
         
         //Pays the fee to the contract
         (bool received, ) = payable(address(this)).call{
@@ -606,7 +637,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
             gas: 20000
         }("");
  //       require(received);
-        if(!received){
+        if(!received){ // _tokenAddress.safeTransfer(address(this), _fee);
             (bool done) = IERC20(_tokenAddress).transfer(
                 address(this), _fee);
             require(done);
@@ -626,7 +657,8 @@ contract FairWheel is PoolStorage, RandomGenerator {
             }("");
             
             //if it fails, try an erc20 token(WETH) || send it to this contract
-            if (!sent) {
+            if (!sent) { 
+                //_tokenAddress.safeTransferFrom(msg.sender, _item.seller, _amount) || _tokenAddress.safeTransfer(address(this), _amount);
                 (bool paid) = IERC20(_tokenAddress).transferFrom(
                     msg.sender, _item.seller, _amount) || IERC20(
                         _tokenAddress).transfer(address(this), _amount
@@ -759,7 +791,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
         return _timeLeft(_claimOnBid);
     }
 
-    function getFloorPrice(DataTypes.Tag _label) public view returns(uint256){
+    function getFloorPrice(Tag _label) public view returns(uint256){
         return _getFloorPrice(_label);
     }
     

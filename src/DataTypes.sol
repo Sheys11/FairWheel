@@ -1,7 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity^0.8.17;
 
-library DataTypes {
     enum Status {
         ON_LIST,
         OUT,
@@ -40,4 +39,3 @@ library DataTypes {
         address highestBidder;
     }
 
-}
