@@ -1,13 +1,14 @@
 //SPDX-License-Identifier: MIT
 pragma solidity^0.8.17;
 
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-///@dev would use solmate for gas optimisation later but it's openzeppelin for now for better understanding
-//import "@solmate/tokens/ERC721.sol";
-//import "@solmate/tokens/ERC20.sol";
-//import {WETH} from "@solmate/tokens/WETH.sol";
+//import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+//import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+//import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+///@dev using solmate for gas optimisation. Previous use of openzeppelin is present for better understanding
+import "@solmate/tokens/ERC721.sol";
+import "@solmate/tokens/ERC20.sol";
+import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
+import {WETH} from "@solmate/tokens/WETH.sol";
 import {RandomGenerator} from './RandomGenerator.sol';
 import {Status, Tag, Item, Auction} from './DataTypes.sol';
 import {PoolStorage} from './PoolStorage.sol';
@@ -21,11 +22,15 @@ error BidFailed(string);
  * This contract isn't complete/optimized and should have other useful features like being upgradeable
  */
 contract FairWheel is PoolStorage, RandomGenerator {
-  //  using SafeTransferLib for ERC20;
+    using SafeTransferLib for WETH;
+    using SafeTransferLib for address;
 
-    //WETH public weth; 
+    WETH internal immutable weth; 
 
-    IERC20 public _tokenAddress;
+ //   ERC20 internal immutable weth;
+
+
+    //IERC20 public _tokenAddress;
 
     address public _admin;
 
@@ -127,11 +132,11 @@ contract FairWheel is PoolStorage, RandomGenerator {
      * @dev The constructor initialises the VRF subscription id from chainlink and an erc20 token address that
      *      that can be accepted aside ether - posssibly WETH. 
      *      Also assigns admin's role to deployer and sets "_defaultAuctionBidPeriod" as 24 hrs.
-     * @param tokenAddress_ The erc20 token address
      * @param _subscriptionId Chainlink VRF's subscriptionId
      */
-    constructor(IERC20 tokenAddress_, uint64 _subscriptionId) RandomGenerator(_subscriptionId) {
-      _tokenAddress = tokenAddress_;
+    constructor(WETH _weth, uint64 _subscriptionId) RandomGenerator(_subscriptionId) {
+      //_tokenAddress = tokenAddress_;
+      weth = WETH(_weth);
       _admin = msg.sender;
       _defaultAuctionBidPeriod = 86400; // 1 day
     }
@@ -155,9 +160,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
         uint128 _askPrice
     ) public {
         require(_nftAddress != address(0), "INVALID_ADDRESS");
-        require(_tokenId != 0, "INVALID_TokenID");
         require(_askPrice >= uint128(_priceLimit), "PRICE_IS_TOO_LOW");
-        require(!_deposited[_nftAddress]);
 
         /// @dev Only whitelisted NFT collection will be allowed to be sold 
         ///      on the protocol - It hasn't been implemented yet 
@@ -172,15 +175,15 @@ contract FairWheel is PoolStorage, RandomGenerator {
         } */
 
         //solmate's transfer function
-        //ERC721(_nftAddress).safeTransferFrom(msg.sender, address(this), _tokenId);
+        ERC721(_nftAddress).safeTransferFrom(
+            msg.sender, address(this), _tokenId
+        );
 
-        bool successsful = IERC721(_nftAddress).transferFrom(
+      /*  bool successsful = IERC721(_nftAddress).transferFrom(
             msg.sender, address(this), _tokenId
         );
         require(successsful);
-        
-        
-        _deposited[_nftAddress] = true;
+        */
 
         ///@dev The tokenWrapper Nft call - Hasn't been implemented yet
         //_mintbeeCard(uint _askPrice);
@@ -250,14 +253,21 @@ contract FairWheel is PoolStorage, RandomGenerator {
 
         uint256 floorPrice = _getFloorPrice(_label);
 
-        //_tokenAddress.safeApprove(address(this), floorPrice);
-        //
+        //address(0).safeApprove(floorPrice);
+        //payable(msg.sender).safeApprove(address(this), floorPrice);
+        uint256 userBalance = payable(msg.sender).balance;
+        
+        if(userBalance < floorPrice){
+            weth.safeApprove(address(this), floorPrice);
+        }
+        /*
         
         (bool approved) = IERC20(_tokenAddress).approve(
             address(this), floorPrice
         );
         require(approved);
-        
+        */
+
         uint256 rand = RandomGenerator.generateRandomObject(
             msg.sender, offList
         ); 
@@ -315,11 +325,18 @@ contract FairWheel is PoolStorage, RandomGenerator {
                 ), "YOUR_BID_IS < _minBidIncreasePercentage_OF_CURRENT_BID"
             );
             
-            //_tokenAddress.safeApprove(address(this), _bidAmount);
+            uint256 userBalance = payable(msg.sender).balance;
+        
+            if(userBalance < _bidAmount){
+                weth.safeApprove(address(this), _bidAmount);
+            }
+
+            /*
             (bool done) = IERC20(_tokenAddress).approve(
                 address(this), _bidAmount
             );
             require(done);
+            */
 
             claim.highestBid = _bidAmount;
             claim.highestBidder = msg.sender;
@@ -392,12 +409,19 @@ contract FairWheel is PoolStorage, RandomGenerator {
                 
                 if(item.rightToClaim == claim.highestBidder && 
                 item.soldPrice == claim.highestBid){
-                    
-                    //_tokenAddress.safeApprove(address(this), item.soldPrice);
+
+                    uint256 userBalance = payable(msg.sender).balance;
+        
+                    if(userBalance < item.soldPrice){
+                        weth.safeApprove(address(this), item.soldPrice);
+                    }
+                 
+                    /*
                     (bool checked) = IERC20(_tokenAddress).approve(
                         address(this), item.soldPrice
                     );
                     require(checked);
+                    */
                     
                     _purchaseItem(i, _nftRecipient);
                     _resetAll(i, _claim);
@@ -437,37 +461,37 @@ contract FairWheel is PoolStorage, RandomGenerator {
     ///@return item.label - the assigned label
     function _addLabel(uint256 _item) internal returns(Tag){
         Item storage item = _items[_item];
-        uint256[] memory priceTags = _priceTags;
+        uint256[10] memory priceTags = _priceTags;
  
         if(item.askPrice < priceTags[0]){
-            return item.label = Tag.TIER_ONE;
+            return Tag.TIER_ONE;
         }
         if(item.askPrice >= priceTags[1]){
-            return item.label = Tag.TIER_TWO;  
+            return Tag.TIER_TWO;  
         } 
         if(item.askPrice >= priceTags[2]){
-            return item.label = Tag.TIER_THREE;
+            return Tag.TIER_THREE;
         } 
         if(item.askPrice >= priceTags[3]){
-            return item.label = Tag.TIER_FOUR;
+            return Tag.TIER_FOUR;
         } 
         if(item.askPrice >= priceTags[4]){
-            return item.label = Tag.TIER_FIVE;
+            return Tag.TIER_FIVE;
         }  
         if(item.askPrice >= priceTags[5]){
-            return item.label = Tag.TIER_SIX;
+            return Tag.TIER_SIX;
         } 
         if(item.askPrice >= priceTags[6]){
-            return item.label = Tag.TIER_SEVEN;
+            return Tag.TIER_SEVEN;
         } 
         if(item.askPrice >= priceTags[7]){
-            return item.label = Tag.TIER_EIGHT;
+            return Tag.TIER_EIGHT;
         } 
         if(item.askPrice >= priceTags[8]){
-            return item.label = Tag.TIER_NINE;
+            return Tag.TIER_NINE;
         } 
         if(item.askPrice >= priceTags[9]){
-            return item.label = Tag.BOTTOM_T;
+            return Tag.BOTTOM_T;
         }
         
        // item.label = Tag.TIER_ONE;
@@ -581,7 +605,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
 
         ///@dev Uses safeTransferFrom to check if "item.nftRecipient" 
         ///     can receive Nft before execution
-        IERC721(item.nftContract).safeTransferFrom(
+        ERC721(item.nftContract).safeTransferFrom(
             address(this),
             item.nftRecipient,
             item.tokenId
@@ -593,8 +617,6 @@ contract FairWheel is PoolStorage, RandomGenerator {
             item.nftRecipient,
             item.tokenId
         ); */
-
-        _deposited[item.nftContract] = false;
 
        // _resetAll(item);
 
@@ -627,8 +649,8 @@ contract FairWheel is PoolStorage, RandomGenerator {
         uint256 _fee
     ) internal {
         
-        //payable(msg.sender).approve(address(this), _tokenAddress)_item.BeeCardId);
-        // safeTransferETH(address(this), _fee);
+        //payable(msg.sender).approve(address(this), _tokenAddress) _item.BeeCardId);
+        //payable(msg.sender).safeTransferETH(_fee);
 
         
         //Pays the fee to the contract
@@ -636,9 +658,10 @@ contract FairWheel is PoolStorage, RandomGenerator {
             value: _fee,
             gas: 20000
         }("");
+
  //       require(received);
-        if(!received){ // _tokenAddress.safeTransfer(address(this), _fee);
-            (bool done) = IERC20(_tokenAddress).transfer(
+        if(!received){  //_tokenAddress.safeTransfer(address(this), _fee);
+            (bool done) = weth.transfer(  //use transfer except approve function don't work
                 address(this), _fee);
             require(done);
         }
@@ -659,9 +682,9 @@ contract FairWheel is PoolStorage, RandomGenerator {
             //if it fails, try an erc20 token(WETH) || send it to this contract
             if (!sent) { 
                 //_tokenAddress.safeTransferFrom(msg.sender, _item.seller, _amount) || _tokenAddress.safeTransfer(address(this), _amount);
-                (bool paid) = IERC20(_tokenAddress).transferFrom(
-                    msg.sender, _item.seller, _amount) || IERC20(
-                        _tokenAddress).transfer(address(this), _amount
+                (bool paid) = weth.transferFrom(
+                    msg.sender, _item.seller, _amount) ||
+                        weth.transfer(address(this), _amount
                     );
                         
                 require(paid);

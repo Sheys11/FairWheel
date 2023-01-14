@@ -2,57 +2,49 @@
 pragma solidity ^0.8.17;
 
 import "../FairWheel.sol";
-import {RandomGenerator} from '../RandomGenerator.sol';
+import {SimpleHelper} from './SimpleHelper.sol';
 import {Status, Tag, Item, Auction} from '../DataTypes.sol';
+import {PoolStorage} from '../PoolStorage.sol';
 import "./mocks/MockVRFCoordinatorV2.sol";
 import "./mocks/LinkToken.sol";
 import "./mocks/MockNFT.sol";
+import {WETH} from "@solmate/tokens/WETH.sol";
 import "./utils/Cheats.sol";
 import {HelperEvents} from "./HelperEvents.sol";
 import "forge-std/Test.sol";
 
-contract FairWheelTest is Test, HelperEvents {
+contract FairWheelTest is Test, HelperEvents, PoolStorage {
+    using SafeTransferLib for WETH;
+    using SafeTransferLib for address;
+    //using ERC721 for MockNFT;
+   
+
     LinkToken public linkToken;
     MockNFT public nft;
+    WETH internal immutable weth; 
     MockVRFCoordinatorV2 public vrfCoordinator;
-    RandomGenerator public randomGenerator;
+    SimpleHelper public randomGenerator;
     FairWheel public fairwheel;
     Cheats internal constant cheats = Cheats(HEVM_ADDRESS);
 
     address public admin;
     uint256 public staticTime;
 
-/*    enum Status {
-        ON_LIST,
-        OUT,
-        OFF_LIST
-    } 
-    
-    enum Tag { 
-        TIER_ONE,   //100 above ethers    100000000000000000000
-        TIER_TWO,   //70 - 100 ethers     70000000000000000000     
-        TIER_THREE, //50 - 70 ethers      50000000000000000000
-        TIER_FOUR,  //35 - 50 ethers      35000000000000000000
-        TIER_FIVE,  //20 - 35 ethers      20000000000000000000
-        TIER_SIX,   //10 - 20 ethers      10000000000000000000
-        TIER_SEVEN, //5 - 10 ethers       5000000000000000000
-        TIER_EIGHT, //1 - 5 ethers        1000000000000000000
-        TIER_NINE,  //0.5 - 1 ether       0500000000000000000
-        BOTTOM_T    //0.01 - 0.5 ether    0010000000000000000
-    } */
-
     uint96 constant FUND_AMOUNT = 1 * 10**18;
     uint256 constant NFT_SUPPLY = 10000;
     uint96 constant PRICE_LIMIT = 1e16; 
-    uint256[10] constant PRICE_TAG = [1e20, 75e18, 5e19, 35e18, 2e19, 1e19, 5e18, 1e18, 5e17, 1e16];
-    uint256[10] constant ITEM_AMOUNT = [9e15, 4e17, 2e18, 84e17, 15e18, 24e18, 35e18, 64e18, 754e17, 11e19];
-    uint256[10] constant priceTags = [100, 75, 50, 35, 20, 10, 5, 1, 0.5, 0.01];
+    uint256[10] PRICE_TAG = [1e20, 75e18, 5e19, 35e18, 2e19, 1e19, 5e18, 1e18, 5e17, 1e16];
+    uint256[10] ITEM_AMOUNT = [9e15, 4e17, 2e18, 84e17, 15e18, 24e18, 35e18, 64e18, 754e17, 11e19];
+  //  uint256[10] priceTags = [100, 75, 50, 35, 20, 10, 5, 1, 0.5, 0.01];
 
     uint256 totalNumber;
 
     // Initialized as blank, fine for testing
     uint64 subId;
     bytes32 keyHash; // gasLane
+    address Bob = address(0x73A1);
+    address Alice = address(0x14);
+    address Tess = address(0x192);
 
     uint32 defaultAuctionBidPeriod;
 
@@ -61,17 +53,19 @@ contract FairWheelTest is Test, HelperEvents {
     function setUp() public {
         staticTime = block.timestamp;
         linkToken = new LinkToken();
-        nft = new MockNFT();
+        weth = new WETH();
+        nft = new MockNFT("bafkreiba3o2d3nhwxnjxnpyxrpbqbspuxykpcprrit5rdjxedfiq3gqkkm");
         vrfCoordinator = new MockVRFCoordinatorV2();
         subId = vrfCoordinator.createSubscription();
         vrfCoordinator.fundSubscription(subId, FUND_AMOUNT);
         fairwheel = new FairWheel(
-            subId,
+            WETH(weth),
+            subId
             //address(vrfCoordinator),
-            address(linkToken)
+            
             //keyHash
         );
-        randomGenerator = new RandomGenerator(
+        randomGenerator = new SimpleHelper(
             subId,
             address(vrfCoordinator),
             address(linkToken),
@@ -96,31 +90,82 @@ contract FairWheelTest is Test, HelperEvents {
         setPriceTag();
         
         uint256 randAmount = generateRandomObject(msg.sender, 0, ITEM_AMOUNT);
-        uint256 randID = generateRandomObject(msg.sender, NFT_SUPPLY, 0);
+        uint256 randID = generateRandomObject(msg.sender, NFT_SUPPLY, []);
         
-        assertTrue(randID != 0);
         assertGt(uint128(randAmount), PRICE_LIMIT);
 
-        uint256 itemId = fairwheel._itemId();
+        uint256 itemId = _itemId;
         
-        assertTrue(!fairwheel.deposited([address(nft)]));
+        assertTrue(!_deposited[address(nft)]);
 
         fairwheel.depositNFT(address(nft), randID, uint128(randAmount));
         
         
         uint8 itemLabel = addLabel(randAmount);
         //uint256 newItemId = fairwheel._itemId();
+        address nFtowner = nft.ownerOf(randID);
 
-        assertEq(address(fairwheel), nft._ownerOf[randID]);
-        assertTrue(fairwheel._deposited([address(nft)]) == true);
-        assertEq(fairwheel._items([itemId].tokenId), randID);
-        assertEq(fairwheel._items([itemId].askPrice), randAmount);
+        assertEq(address(fairwheel), nFtowner);
+        assertTrue(_deposited[address(nft)]);
+        assertEq(_items[itemId].tokenId, randID);
+        assertEq(_items[itemId].askPrice, randAmount);
         //Don't know if it will work
-        assertEq(uint8(fairwheel._items([itemId].label)), itemLabel);
-        assertTrue(itemId != fairwheel._itemId());
+        assertEq(uint8(_items[itemId].label), itemLabel);
+        assertTrue(itemId != _itemId);
 
-        vm.expectEmit(false, false, false, true, address(msg.sender));
-        emit NFTDeposited(randAmount, randID, itemLabel, itemId, msg.sender);
+        vm.expectEmit(true, true, false, true, address(msg.sender));
+        emit NFTDeposited( 
+            randID,
+            randAmount,
+            0, 
+            _items[itemId].label,
+            Status.OFF_LIST,
+            payable(msg.sender),
+            payable(0),
+            payable(0),
+            address(nft)
+        );
+    }
+
+    function testCannotDepositAlreadyDepositedNFT() public {
+        //Not using yet because of float points
+        /* for(uint256 i; i < priceTags.length;){
+            fairwheel.setPriceTag(i, priceTags[i]);
+            assertTrue(fairwheel._priceTags([i]) == priceTags[i]);
+            unchecked{i++;}
+        } */
+
+        setPriceTag();
+        
+        uint256 randAmount = generateRandomObject(msg.sender, 0, ITEM_AMOUNT);
+        uint256 randID = generateRandomObject(msg.sender, NFT_SUPPLY, 0);
+        
+        assertGt(uint128(randAmount), PRICE_LIMIT);
+
+        uint256 itemId = _itemId;
+        
+        assertTrue(_deposited[address(nft)]);
+        fairwheel.depositNFT(address(nft), 0, uint128(randAmount));
+        vm.expectRevert();
+    }
+
+    function testCannotDepositWithInvalidInputs() public {
+        //Not using yet because of float points
+        /* for(uint256 i; i < priceTags.length;){
+            fairwheel.setPriceTag(i, priceTags[i]);
+            assertTrue(fairwheel._priceTags([i]) == priceTags[i]);
+            unchecked{i++;}
+        } */
+
+        setPriceTag();
+        
+        uint256 randAmount = generateRandomObject(msg.sender, 0, ITEM_AMOUNT);
+        assertLt(uint128(randAmount), PRICE_LIMIT);
+
+        uint256 itemId = _itemId;
+
+        fairwheel.depositNFT(address(nft), 0, uint128(randAmount));
+        vm.expectRevert();
     }
 
     function addLabel(uint256 item) internal returns(uint8){
@@ -451,7 +496,7 @@ contract FairWheelTest is Test, HelperEvents {
     function generateRandomObject(
         address _searcher, 
         uint256 _number,
-        uint256[] memory _itemList
+        uint256[10] memory _itemList
     ) internal returns(uint256){
 
         totalNumber = _number;

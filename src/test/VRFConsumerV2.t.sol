@@ -77,4 +77,5 @@ contract VRFConsumerV2Test is Test {
         }
         return words;
     }
+
 }
