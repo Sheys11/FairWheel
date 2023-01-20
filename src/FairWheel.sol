@@ -235,7 +235,7 @@ contract FairWheel is PoolStorage, RandomGenerator {
 
         //declared an "offList" array to store the Ids of items 
         //with the "_label" and "OFF_LIST" tags
-        uint256[] memory offList = new uint[](j);
+        uint256[] memory offList = new uint256[](j);
 
         while(i < _itemId){
             Item memory item = _items[i];

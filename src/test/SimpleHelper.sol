@@ -45,9 +45,10 @@ contract SimpleHelper is VRFConsumerBaseV2, PoolStorage {
     address s_owner;
 
     ///@dev An array of objects
-    uint256[] _objectsId;
+    uint256[] public _objectsId;
 
     uint256[] public s_randomWords;
+    uint256 public s_requestId;
 
     // map callers to requestIds
     mapping(uint256 => address) private s_callers;
@@ -85,10 +86,10 @@ contract SimpleHelper is VRFConsumerBaseV2, PoolStorage {
      *
      * @param _caller address of the roller
      */
-    function requestRandomness(address _caller) internal returns (uint256 requestId) {
+    function requestRandomness(address _caller) public returns (uint256 requestId) {
         require(s_results[_caller] == 0, "Already called");
         // Will revert if subscription is not set and funded.
-        requestId = COORDINATOR.requestRandomWords(
+        s_requestId = COORDINATOR.requestRandomWords(
             s_keyHash,
             s_subscriptionId,
             requestConfirmations,
@@ -96,9 +97,9 @@ contract SimpleHelper is VRFConsumerBaseV2, PoolStorage {
             numWords
         );
 
-        s_callers[requestId] = _caller;
+        s_callers[s_requestId] = _caller;
         s_results[_caller] = ROLL_IN_PROGRESS;
-        emit RandRequested(requestId, _caller);
+        emit RandRequested(s_requestId, _caller);
     }
 
     /**
@@ -124,9 +125,13 @@ contract SimpleHelper is VRFConsumerBaseV2, PoolStorage {
         emit RandGenerated(requestId, objectValue);
     }
 
-    function getObjectsNum() private view returns(uint256) {
+    function getObjectsNum() public view returns(uint256) {
         return _objectsId.length;
     } 
+    
+   /* function getRandomWord() public {
+        return s_random[0]
+    }*/
 
     /**
      * @notice Generates a random object(uint) from a list of an array passed into the function
@@ -149,12 +154,26 @@ contract SimpleHelper is VRFConsumerBaseV2, PoolStorage {
         return rand;
     }
 
+    function deleteResult(address _searcher) public returns(bool) {
+        s_results[_searcher] = 0;
+        return true;
+    }
+    
+    function getResults(uint256 requestId) public returns(uint256){
+        return s_results[s_callers[requestId]];
+    }
+
+    function addObjects(uint256[] calldata _list) public returns(bool) {
+        _objectsId = _list;
+        return true;
+    }
+
     /**
      * @notice Get the random object assigned to the receiver
      * @param _receiver address
      * @return object id as an uint
      */
-    function checkStatus(address _receiver) internal view returns(uint256) {
+    function checkStatus(address _receiver) public view returns(uint256) {
         require(s_results[_receiver] != 0, 'Rand not requested');
         require(s_results[_receiver] != ROLL_IN_PROGRESS, 'Roll in progress');
         return getStatus(s_results[_receiver]);
@@ -169,7 +188,7 @@ contract SimpleHelper is VRFConsumerBaseV2, PoolStorage {
         return _objectsId[_id];
     }
 
-    function _removeObjects() internal {
+    function _removeObjects() public {
         uint256[] storage objectArray = _objectsId;
 
         uint i;
