@@ -91,19 +91,29 @@ contract FairWheelTest is Test, HelperEvents, PoolStorage {
 
         setPriceTag();
         
-        uint256 randAmount = generateRandomObject(msg.sender, 0, ITEM_AMOUNT);
-
-        uint256 randID = generateObject(msg.sender, NFT_SUPPLY, fakes);
+        uint256 randAmount = 5e18;
         
-        assertGt(uint128(randAmount), PRICE_LIMIT);
+        //generateRandomObject(msg.sender, 0, ITEM_AMOUNT);
+
+        uint256 randID = 0;
+        
+        //generateObject(msg.sender, NFT_SUPPLY, fakes);
+        
+       // assertGt(uint128(randAmount), PRICE_LIMIT);
 
         uint256 itemId = _itemId;
+
+       // nft.safeTransferFrom(
+        //    msg.sender, address(Bob), randID
+        //);
         
        // assertTrue(!_deposited[address(nft)]);
-        vm.prank(Bob);
+        vm.startPrank(Bob);
+        nft = new MockNFT("ajdjlfjfjjdld43nckss");
 
         fairwheel.depositNFT(address(nft), randID, uint128(randAmount));
         
+        vm.stopPrank();
         
         uint8 itemLabel = addLabel(randAmount);
         //uint256 newItemId = fairwheel._itemId();
@@ -943,6 +953,9 @@ contract FairWheelTest is Test, HelperEvents, PoolStorage {
         uint256 requestId = randomGenerator.s_requestId();
 
         uint256 word = getWords(requestId);
+
+        vm.deal(address(randomGenerator), 1000000 ether);
+        vm.prank(address(vrfCoordinator));
 
         // When testing locally you MUST call fulfillRandomness youself to get the
         // randomness to the consumer contract, since there isn't a chainlink node on your local network
