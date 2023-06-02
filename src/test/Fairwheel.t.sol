@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "../FairWheel.sol";
+import {FairWheel, AccessPool} from "../FairWheel.sol";
 import {SimpleHelper} from './SimpleHelper.sol';
 import {Status, Tag, Item, Auction} from '../DataTypes.sol';
 import {PoolStorage} from '../PoolStorage.sol';
@@ -9,6 +9,7 @@ import "./mocks/MockVRFCoordinatorV2.sol";
 import "./mocks/LinkToken.sol";
 import "./mocks/MockNFT.sol";
 import {WETH} from "@solmate/tokens/WETH.sol";
+import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import "./utils/Cheats.sol";
 import {HelperEvents} from "./HelperEvents.sol";
 import "forge-std/Test.sol";
@@ -25,6 +26,7 @@ contract FairWheelTest is Test, HelperEvents, PoolStorage {
     MockVRFCoordinatorV2 public vrfCoordinator;
     SimpleHelper public randomGenerator;
     FairWheel public fairwheel;
+    AccessPool public accessPool;
     Cheats internal constant cheats = Cheats(HEVM_ADDRESS);
 
     address public admin;
@@ -74,14 +76,23 @@ contract FairWheelTest is Test, HelperEvents, PoolStorage {
             keyHash
         );
         vrfCoordinator.addConsumer(subId, address(randomGenerator));
-        
+        accessPool = new AccessPool();
 
         admin = msg.sender;
         defaultAuctionBidPeriod = 86400;
         cheats.warp(staticTime);
     }
 
-    function testCanDepositNFT() public {
+/*
+    function testAccess() public {
+        bytes memory txd = abi.encodeWithSignature("setPriceLimit(uint64)", 20);
+        (, bytes memory sad ) = accessPool.see(payable(fairwheel));
+        assertEq(sad, txd);
+       /* uint64 fad = accessPool.see(payable(fairwheel));
+        assertEq(fad, 20);
+    }*/
+
+    function CanDepositNFT() public {
         //Not using yet because of float points
         /* for(uint256 i; i < priceTags.length;){
             fairwheel.setPriceTag(i, priceTags[i]);

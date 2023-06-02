@@ -7,16 +7,16 @@ pragma solidity^0.8.17;
 ///@dev using solmate for gas optimisation. Previous use of openzeppelin is present for better understanding
 import "@solmate/tokens/ERC721.sol";
 import "@solmate/tokens/ERC20.sol";
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
+import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {WETH} from "@solmate/tokens/WETH.sol";
-import {RandomGenerator} from './RandomGenerator.sol';
+import {RandomGenerator} from "./RandomGenerator.sol";
 import {Status, Tag, Item, Auction} from './DataTypes.sol';
 import {PoolStorage} from './PoolStorage.sol';
 
 error BidFailed(string);
 
 /**
- * @title FairWheel 
+ * @title FairWheel Marketplace
  * @dev The main nft marketplace contract where all trades logic are present.
  * This contract should NOT define storage as it is managed by PoolStorage.
  * This contract isn't complete/optimized and should have other useful features like being upgradeable
@@ -136,11 +136,88 @@ contract FairWheel is PoolStorage, RandomGenerator {
      */
     constructor(WETH _weth, uint64 _subscriptionId) RandomGenerator(_subscriptionId) {
       //_tokenAddress = tokenAddress_;
-      weth = WETH(_weth);
-      _admin = msg.sender;
+      weth = _weth;   //WETH(_weth);
+      _admin = address(this);
       _defaultAuctionBidPeriod = 86400; // 1 day
     }
 
+/*
+    Tier1Strategy tier1Strategy;
+    Tier2Strategy tier2Strategy;
+    Tier3Strategy tier3Strategy;
+    Tier4Strategy tier4Strategy;
+    Tier5Strategy tier5Strategy;
+    Tier6Strategy tier6Strategy;
+    Tier7Strategy tier7Strategy;
+    Tier8Strategy tier8Strategy;
+    Tier9Strategy tier9Strategy;
+    Bottom_TStrategy bottom_TStrategy;
+
+
+    constructor(
+        address _tier1Strategy,
+        address _tier2Strategy,
+        address _tier3Strategy,
+        address _tier4Strategy,
+        address _tier5Strategy,
+        address _tier6Strategy,
+        address _tier7Strategy,
+        address _tier8Strategy,
+        address _tier9Strategy,
+        address _bottom_TStrategy,
+        WETH _weth, 
+        uint64 _subscriptionId
+    ) RandomGenerator(_subscriptionId) {
+        tier1Strategy = Tier1Strategy(_tier1Strategy);
+        tier2Strategy = Tier2Strategy(_tier2Strategy);
+        tier3Strategy = Tier3Strategy(_tier3Strategy);
+        tier4Strategy = Tier4Strategy(_tier4Strategy);
+        tier5Strategy = Tier5Strategy(_tier5Strategy);
+        tier6Strategy = Tier6Strategy(_tier6Strategy);
+        tier7Strategy = Tier7Strategy(_tier7Strategy);
+        tier8Strategy = Tier8Strategy(_tier8Strategy);
+        tier9Strategy = Tier9Strategy(_tier9Strategy);
+        bottom_TStrategy = Bottom_TStrategy(_bottom_TStrategy);
+
+        weth = _weth;   //WETH(_weth);
+        _admin = msg.sender;
+        _defaultAuctionBidPeriod = 86400; // 1 day
+    }
+
+    function addNewStrategy(address _strategy, uint8 _identifier) external onlyOwner returns(address) {
+
+        if(_identifier == 1){
+            tier1Strategy = Tier1Strategy(_strategy);
+        }
+        if(_identifier == 2){
+            tier2Strategy = Tier2Strategy(_strategy);
+        }
+        if(_identifier == 3){
+            tier3Strategy = Tier3Strategy(_strategy);
+        }
+        if(_identifier == 4){
+            tier4Strategy = Tier4Strategy(_strategy);
+        }
+        if(_identifier == 5){
+            tier5Strategy = Tier5Strategy(_strategy);
+        }
+        if(_identifier == 6){
+            tier6Strategy = Tier6Strategy(_strategy);
+        }
+        if(_identifier == 7){
+            tier7Strategy = Tier7Strategy(_strategy);
+        }
+        if(_identifier == 8){
+            tier8Strategy = Tier8Strategy(_strategy);
+        }
+        if(_identifier == 9){
+            tier9Strategy = Tier9Strategy(_strategy);
+        }
+        if(_identifier == 10){
+            bottom_TStrategy = Bottom_TStrategy(_strategy);
+        }
+    }
+*/
 /*
 =====================================================================================================
 =========================================== FUNCTIONS ===============================================
@@ -155,22 +232,18 @@ contract FairWheel is PoolStorage, RandomGenerator {
      * @param _askPrice - The asking price of a seller
      */
     function depositNFT(
-        address _nftAddress, 
-        uint256 _tokenId, 
-        uint128 _askPrice
-    ) public {
-        require(_nftAddress != address(0), "INVALID_ADDRESS");
-        require(_askPrice >= uint128(_priceLimit), "PRICE_IS_TOO_LOW");
-
-        /// @dev Only whitelisted NFT collection will be allowed to be sold 
-        ///      on the protocol - It hasn't been implemented yet 
-        //require(whitelistNftAddresses[_nftAddress] = true);
-        
+        address nftAddress_, 
+        uint256 tokenId_, 
+        uint128 askPrice_
+        Tag prefferedPool_
+    ) public { 
+        require(nftAddress_ != address(0), "INVALID_ADDRESS");
+        require(askPrice_ >= uint128(_priceLimit), "PRICE_IS_TOO_LOW");
 
         ///@dev If the Nft isn't part of the stored bluechip Nft's addresses,
         ///     the askPrice price must be less than/equal to the average price
         ///     gotten from a Nft oracle  - Hasn't been implemented yet
-        /* if(_nftAddress != _bluechips[_nftAddress]) {
+        /* if(nftAddress_ != _bluechips[nftAddress_]) {
             require(_askPrice <= DIAXfloor_MA)
         } */
 
@@ -179,36 +252,109 @@ contract FairWheel is PoolStorage, RandomGenerator {
             msg.sender, address(this), _tokenId
         );
 
-      /*  bool successsful = IERC721(_nftAddress).transferFrom(
+        /*  bool successsful = IERC721(_nftAddress).transferFrom(
             msg.sender, address(this), _tokenId
         );
         require(successsful);
         */
 
-        ///@dev The tokenWrapper Nft call - Hasn't been implemented yet
-        //_mintbeeCard(uint _askPrice);
-
-        Tag label;
-
-        uint256 deposit = _itemId;
-
-        _items[deposit] = Item(
-            _tokenId,
-            _askPrice,
-            0,
-            label,
+        if(#0xprefferedListingPass[msg.sender]){
+            _store(6, _#clubListIds[6], tokenId_, askPrice_, 0, prefferedPool_, 0x10 // - independent art, // poolStrategy,
             Status.OFF_LIST,
-    //        beeCardId,
             payable(msg.sender),
             payable(0),
+            nftAddress_);
+
+            ++_#clubListIds[6];
+        }
+        
+        Tag label = _addLabel(askPrice_);
+
+        if(_0xclubA[nftAddress_]){
+            _store(0, _#clubListIds[0], tokenId_, askPrice_, 0, label, #group[0], // poolStrategy,
+            Status.OFF_LIST,
+            payable(msg.sender),
             payable(0),
-            _nftAddress
-        );
+            nftAddress_);
 
-        //this will update the struct
-        label = _addLabel(deposit);
+            ++_#clubListIds[0];
+        }
 
-        _itemId++;
+        if(_0xclubB[nftAddress_]){
+            _store(1, _#clubListIds[1], tokenId_, askPrice_, 0, label, #group[1], // poolStrategy,
+            Status.OFF_LIST,
+            payable(msg.sender),
+            payable(0),
+            nftAddress_);
+
+            ++_#clubListIds[1];
+        }
+
+        if(_0xclubC[nftAddress_]){
+            _store(2, _#clubListIds[2], tokenId_, askPrice_, 0, label, #group[2], // poolStrategy,
+            Status.OFF_LIST,
+            payable(msg.sender),
+            payable(0),
+            nftAddress_);
+
+            ++_#clubListIds[2];
+        }
+
+        if(_0xclubD[nftAddress_]){
+            _store(3, _#clubListIds[3], tokenId_, askPrice_, 0, label, #group[3], // poolStrategy,
+            Status.OFF_LIST,
+            payable(msg.sender),
+            payable(0),
+            nftAddress_);
+
+            ++_#clubListIds[3];
+        }
+
+        if(_0xclubE[nftAddress_]){
+            _store(4, _#clubListIds[4], tokenId_, askPrice_, 0, label, #group[4], // poolStrategy,
+            Status.OFF_LIST,
+            payable(msg.sender),
+            payable(0),
+            nftAddress_);
+
+            ++_#clubListIds[4];
+        }
+
+        if(_0xclubF[nftAddress_]){
+            _store(5, _#clubListIds[5], tokenId_, askPrice_, 0, label, #group[5], // poolStrategy,
+            Status.OFF_LIST,
+            payable(msg.sender),
+            payable(0),
+            nftAddress_);
+
+            ++_#clubListIds[5];
+        }
+
+    /*
+        if(_0xclubG[nftAddress_] && !#0xprefferedListingPass[msg.sender]){
+
+            _store(6, _#clubListIds[6], tokenId_, askPrice_, 0, label, #group[6], // poolStrategy,
+            Status.OFF_LIST,
+            payable(msg.sender),
+            payable(0),
+            nftAddress_);
+
+            ++_#clubListIds[6];
+        }
+        
+    */
+
+        if(!_0xclubA[nftAddress_] && !_0xclubB[nftAddress_] && !_0xclubC[nftAddress_] && !_0xclubD[nftAddress_] && !_0xclubE[nftAddress_] && !_0xclubF[nftAddress_] && !_0xclubG[nftAddress_] && !#0xprefferedListingPass[msg.sender]){
+            _store(6, _#clubListIds[6], tokenId_, askPrice_, 0, label, 0x00 //undefined, 
+            // poolStrategy,
+            Status.OFF_LIST,
+            payable(msg.sender),
+            payable(0),
+            nftAddress_);
+
+            ++_#clubListIds[6];
+        }  
+
 
         emit NFTDeposited(
             _tokenId, 
@@ -223,74 +369,192 @@ contract FairWheel is PoolStorage, RandomGenerator {
         );
     }
 
+    function _store(
+        uint256 n_,
+        uint256 index_,
+        uint256 tokenId_,
+        uint256 askPrice_,
+        uint256 soldPrice_,
+        Tag label_,
+        bytes4 clubId_,
+        address pool_,
+        Status status_,
+        address owner_,
+        address recipient_,
+        address nftContract_
+        ) internal {
 
-    /**
-     * @notice Starts a new auction
-     * @dev Check for any excess of memory/gas used. Function is made public so any contract can call it
-     * @param _label - The specific label(pool) to bid from
-     */
-    function startNewAuction(Tag _label) public {
-    
+            if(n_ == 0){
+               Item storage item = _#clubAList[index_]; 
+            }
+            if(n_ == 1){
+               Item storage item = _#clubBList[index_]; 
+            }
+            if(n_ == 2){
+               Item storage item = _#clubCList[index_]; 
+            }
+            if(n_ == 3){
+               Item storage item = _#clubDList[index_]; 
+            }
+            if(n_ == 4){
+               Item storage item = _#clubEList[index_]; 
+            }
+            if(n_ == 5){
+               Item storage item = _#clubFList[index_]; 
+            }
+            if(n_ == 6){
+               Item storage item = _#clubGList[index_]; 
+            }
+
+            item.tokenId = tokenId_;
+            item.askPrice = askPrice_;
+            item.soldPrice = soldPrice_;
+            item.label = label_;
+            item.clubId = clubId_;
+            //item.poolStrategy = pool_;
+            item.status = status_;
+            item.seller = owner_;
+            item.nftRecipient = recipient_;
+            item.nftContract = nftContract_;
+    }
+
+    function _sortOffList(uint256 itemId_, uint256 n_, Tag label_) internal returns(uint256[] calldata offList) {
+           
         uint256 i; uint256 j;
 
         //declared an "offList" array to store the Ids of items 
         //with the "_label" and "OFF_LIST" tags
-        uint256[] memory offList = new uint256[](j);
+        offList = new uint256[](j);
 
-        while(i < _itemId){
-            Item memory item = _items[i];
-            if(item.label == _label){
+        while(i < itemId_){
+            if(n_ == 0){
+               Item memory item = _#clubAList[i]; 
+            }
+            if(n_ == 1){
+               Item memory item = _#clubBList[i]; 
+            }
+            if(n_ == 2){
+               Item memory item = _#clubCList[i]; 
+            }
+            if(n_ == 3){
+               Item memory item = _#clubDList[i]; 
+            }
+            if(n_ == 4){
+               Item memory item = _#clubEList[i]; 
+            }
+            if(n_ == 5){
+               Item memory item = _#clubFList[i]; 
+            }
+            if(n_ == 6 || n_ == 7){
+               Item memory item = _#clubGList[i]; 
+            }
+
+            if(item.label == label_){
                 if(item.status == Status.OFF_LIST){
                     offList[j] = i;
-                    j++;
+                    ++j;
                 } 
-            }
+            } 
 
             unchecked {
-                i++;
+                ++i;
             }
         }
+    }
 
-        uint256 floorPrice = _getFloorPrice(_label);
-
-        //address(0).safeApprove(floorPrice);
-        //payable(msg.sender).safeApprove(address(this), floorPrice);
-        uint256 userBalance = payable(msg.sender).balance;
+    /**
+     * @notice Starts a new auction
+     * @dev Check for any excess of memory/gas used. 
+     * @param label_ - The specific label(pool) to bid from
+     * @param bid_ - The bid collateral(floorPrice) to pay
+     */
+    function startNewAuction(
+        Tag label_, 
+        uint256 bid_
+    ) external payable {
+        uint256 floorPrice = _getFloorPrice(label_);
         
-        if(userBalance < floorPrice){
-            weth.safeApprove(address(this), floorPrice);
+        msg.value != 0 ?
+        require(msg.value == floorPrice && bid_ == 0, "BID_IS_INVALID") :
+        require(bid_ == floorPrice, "BID_IS_INVALID");
+
+        uint256 clubListIds = _#clubListIds.length;
+        uint256 rand = generateRandomObject(msg.sender, clubListIds);
+        uint256 userAuctionBids = _#freeCollateral[msg.sender]._index;
+        
+        uint256[] memory items;
+        bytes4 clb;
+        
+        for(uint256 i; i < clubListIds;){
+            if(rand == i && rand != 6 && rand != 7){
+                items = _sortOffList(_#clubListIds[i], rand, label_);
+                clb = #group[i];
+            }
+
+           
+            if(rand == 6 || rand == 7) {
+                items = _sortOffList(_#clubListIds[6], rand, label_);
+                clb = #group[6];
+            }
+            
+            unchecked{++i;}
         }
-        /*
+
+        if(msg.value != 0){
+            bool success = _takeCollateral(msg.value);
+            required(success);
+            bytes32 txHash = keccak256(abi.encode(c, address(0), msg.value));
+            _#freeCollateral[msg.sender] = Collateral(
+                userAuctionBids, 
+                _#collateralHash[userAuctionBids][true] = txHash
+            );
+        } else {
+
+            bool s = _takeCollateral(bid_);
+            required(s);
+            bytes32 txhash = keccak256(abi.encode(c, weth, bid_));
+            _#freeCollateral[msg.sender] = Collateral(
+                userAuctionBids, 
+                _#collateralHash[userAuctionBids][true] = txhash
+            );      
+        }
+
+        ++_#freeCollateral[msg.sender]._#index;
         
-        (bool approved) = IERC20(_tokenAddress).approve(
-            address(this), floorPrice
+        uint256 c = _#claimsOnAuction;
+        Auction memory a = #auctions[c];
+
+        uint256 r = RandomGenerator.generateRandomObject(
+            msg.sender, items
         );
-        require(approved);
-        */
 
-        uint256 rand = RandomGenerator.generateRandomObject(
-            msg.sender, offList
-        ); 
-
-        _items[rand].status = Status.ON_LIST;
-
-        _auctions[_claimsOnAuction] = Auction({
+        if(rand == 0){_#clubAList[r].status = Status.ON_LIST;}
+        if(rand == 1){_#clubBList[r].status = Status.ON_LIST;}
+        if(rand == 2){_#clubCList[r].status = Status.ON_LIST;}
+        if(rand == 3){_#clubDList[r].status = Status.ON_LIST;}
+        if(rand == 4){_#clubEList[r].status = Status.ON_LIST;}
+        if(rand == 5){_#clubFList[r].status = Status.ON_LIST;}
+        if(rand == 6 || rand == 7){_#clubGList[r].status = Status.ON_LIST;}
+           
+        #auctions[c] = Auction({
             highestBid: floorPrice,
-            label: _label,
-            auctionTimeLeft: _defaultAuctionBidPeriod,
+            label: label_,
+            club: clb,
+            strategy: #0xstrategies[uint256(label_)],
+            auctionTimeLeft: block.timestamp + #defaultAuctionBidPeriod,
             highestBidder: payable(msg.sender)
+      //      param: " "
         });
-        
-        _onAuction[_claimsOnAuction] = true; 
-
-        _claimsOnAuction++;
+                
+        _#onAuction[c] = true;
+        ++#claimsOnAuction;
 
         emit NewAuctionStarted(
-            _label, 
-            _claimsOnAuction, 
-            _auctions[_claimsOnAuction].auctionTimeLeft, 
-            _auctions[_claimsOnAuction].highestBid, 
-            msg.sender
+            label_,
+            a.club,
+            c,
+            a.auctionTimeLeft,
+            a.highestBid
         );
     }
 
@@ -298,93 +562,275 @@ contract FairWheel is PoolStorage, RandomGenerator {
     /**
      * @notice Allows buyers to bid for a claim to an Nft
      * @dev Check for any excess of memory/gas used. Function is made public so any contract can call it
-     * @param _label - The specific label(pool) to bid from
-     * @param _claimToBidOn The specific claim to bid on
-     * @param _bidAmount The bid price user is willing to pay
+     * @param label_ - The specific label(pool) to bid from
+     * @param target_ The specific claim to bid on
+     * @param bid_ The bid price user is willing to pay
      */
     function bidForClaims(
-        uint8 _label, 
-        uint256 _claimToBidOn, 
-        uint256 _bidAmount
-    ) public {
-        require(_bidAmount != 0, "INVALID_INPUT");
-        require(_onAuction[_claimToBidOn] == true, "ITEM_NOT_ON_AUCTION");
+        uint8 label_, 
+        uint256 target_, 
+        uint256 bid_
+    ) public payable {
+        require(#onAuction[target_], "NOT_ON_AUCTION");
 
-        Auction storage claim = _auctions[_claimToBidOn];
+        Auction storage c = #auctions[target_];
         
-        require(uint8(claim.label) == _label, "WRONG_POOL");
+        require(uint8(c.label) == label_, "WRONG_POOL");
         
         ///@dev Checks if auction is still on - Auction time is 24 hrs
-        uint32 timeLeft = _timeLeft(_claimToBidOn);
+        uint32 timeLeft = _timeLeft(target_);
 
         if(timeLeft != 0){
             //Bid amount must meet the minimum bid increase 
-            // percentage of current claim
-            require((_bidAmount - claim.highestBid) >= (
-                claim.highestBid * _minBidIncreasePercentage
-                ), "YOUR_BID_IS < _minBidIncreasePercentage_OF_CURRENT_BID"
-            );
-            
-            uint256 userBalance = payable(msg.sender).balance;
-        
-            if(userBalance < _bidAmount){
-                weth.safeApprove(address(this), _bidAmount);
+            // percentage rate of current claim
+            uint256 strategies = #0xstrategies.length;
+            for(uint256 i; i <= strategies;){
+                if(c.strategy == #0xstrategies[i]){
+                    uint256 bipr = ITierStrategy(#0xstrategies[i]).fetchRate(....);
+
+                    //ACTUAL
+                    msg.value != 0 ?
+                    require((msg.value - c.highestBid) >= (c.highestBid * bipr) && bid_ == 0, "BID_IS_INVALID") :
+                    require((bid_ - c.highestBid) >= (c.highestBid * bipr), "BID_IS_INVALID");
+                        
+                    break;
+                }
+                unchecked{++i;}
             }
 
-            /*
-            (bool done) = IERC20(_tokenAddress).approve(
-                address(this), _bidAmount
-            );
-            require(done);
-            */
+            Auction memory a;
+            uint256 userAuctionBids = _#freeCollateral[msg.sender]._index;
+            
+            for(uint256 i; i < userAuctionBids;){
+                (a, , uint256 amount) = abi.decode(
+                    _#freeCollateral[msg.sender]._#collateralHash[i][true],
+                    (Auction, , uint256)
+                );
+                
+                if(a == c){
+                    while(msg.value != 0){
+                        uint256 collat = msg.value - amount;
+                        bool success = _takeCollateral(collat);
+                        required(success);
+                        bytes32 txHash = keccak256(abi.encode(a, address(0), msg.value));
+                        _#freeCollateral[msg.sender]._#collateralHash[i][true] = txHash;
 
-            claim.highestBid = _bidAmount;
-            claim.highestBidder = msg.sender;
+                        break;
+                    }
+
+                    uint256 col = bid_ - amount;
+                    bool s = _takeCollateral(col);
+                    required(s);
+                    bytes32 txhash = keccak256(abi.encode(a, weth, bid_));
+                    _#freeCollateral[msg.sender]._#collateralHash[i][true] = txhash;
+
+                    break;
+                }
+                unchecked{++i;}
+            }
+
+            //Check after loops to avoid immature storage change
+            while(a != c){
+                if(msg.value != 0){
+                    bool success = _takeCollateral(msg.value);
+                    required(success);
+                    bytes32 txHash = keccak256(abi.encode(c, address(0), msg.value));
+                    _#freeCollateral[msg.sender] = Collateral(
+                        userAuctionBids, 
+                        _#collateralHash[userAuctionBids][true] = txHash
+                    );
+                } else {
+
+                bool s = _takeCollateral(bid_);
+                required(s);
+                bytes32 txhash = keccak256(abi.encode(c, weth, bid_));
+                _#freeCollateral[msg.sender] = Collateral(
+                    userAuctionBids, 
+                    _#collateralHash[userAuctionBids][true] = txhash
+                );
+                
+                }
+                ++_#freeCollateral[msg.sender]._#index;
+            }
+
+            c.highestBid = bid_;
+            c.highestBidder = msg.sender;
 
        
             emit NewBidMade(
-                _label, 
-                claim, 
+                label_, 
+                c, 
                 timeLeft, 
-                _bidAmount, 
+                bid_, 
                 msg.sender
             );
         } 
         
         revert BidFailed("AUCTION_HAS_ENDED");
-    }    
+    }  
 
+    function _takeCollateral(uint256 col_) internal payable returns(bool){
+        while(msg.value != 0){
+            //Pays the fee to the contract
+            (bool received, ) = payable(address(this)).call{
+            value: col_,
+            gas: 20000
+            }("");
+            require(received);
+            return true;
+        }
+
+        bool sent = weth.transferFrom(msg.sender, address(this), col_); 
+        //|| matic.transferFrom(msg.sender, address(this), col_);
+        require(sent);
+        return true;
+    } 
+
+    function withdrawCollateral(uint256 target_) external returns(bool){
+        Auction storage c = #auctions[target_];
+
+        Auction memory a;
+        uint256 userAuctionBids = _#freeCollateral[msg.sender]._index;
+            
+        for(uint256 i; i < userAuctionBids;){
+            (a, address token, uint256 amount) = abi.decode(
+                _#freeCollateral[msg.sender]._#collateralHash[i][true], (Auction, address, uint256)
+            );
+                
+            if(a == c){
+                assert(a.highestBidder != msg.sender);
+                _#freeCollateral[msg.sender]._#collateralHash[i][false];
+                    
+                bool success = _payback(amount, token);
+                required(success);
+                return true;
+            }
+            unchecked{++i;}
+        }
+    }
+
+    function _payback(uint256 col_, address token_) internal returns(bool){
+        while(token_ == address(0)){
+            //Pays the fee to the contract
+            (bool received, ) = msg.sender.call{
+            value: col_,
+            gas: 20000
+            }("");
+            require(received);
+            return true;
+        }
+
+        bool sent = weth.transferFrom(address(this), msg.sender, col_); 
+        //|| matic.transferFrom(address(this), msg.sender, col_);
+        require(sent);
+        return true;
+    } 
+
+    function withdrawAllCollateral() external returns(bool){
+        uint256 userAuctionBids = _#freeCollateral[msg.sender]._index;
+
+        uint256 ethCol;
+        uint256 wethCol;
+
+        for(uint256 i; i < userAuctionBids;){
+
+            (Auction memory a, address token, uint256 amount) = abi.decode(_#freeCollateral[msg.sender]._#collateralHash[i][true], (Auction, address, uint256));
+
+            if(a.highestBidder != msg.sender){
+                while(token != address(0)){
+                    wethCol += amount;
+                }
+
+                ethCol += amount;
+                _#freeCollateral[msg.sender]._#collateralHash[i][false];
+            }
+             
+            unchecked{++i;}
+        }
+
+        bool success = _payback(ethCol, address(0));
+        required(success);
+        bool s = _payback(wethCol, #weth);
+        required(s);
+        return true;
+    }
 
     /**
      * @notice Assigns claiming rights to random itemIds
      * @dev Check if there's any excess use of memory/gas
-     * @param _label The pool label in an uint
+     * @param label_ The pool label in an uint
      */
-    function assignClaimingRights(uint8 _label) public {
-        uint256 index;
-        while(index < _claimsOnAuction){
-            if(uint8(_auctions[index].label) == _label){
-                if(_timeLeft(index) == 0){
-                    uint256 randomId = _deliverItem(_label);
-                    Item storage item = _items[randomId];
-                    Auction memory claim = _auctions[index];
+    function assignClaimingRights(uint8 label_) public {
+        uint256 i;
+        uint256 claimId = #_claimsOnAuction;
+        while(i < claimId){
+            if(#_auctions[i].highestBidder == msg.sender)
+            if(uint8(@_auctions[i].label) == label_){
+                if(_timeLeft(i) == 0){
+                    uint256 randomId = _deliverItem(label_);
+                    Item storage id = _items[randomId];
+                    Auction memory c = @_auctions[i];
 
-                    item.rightToClaim = claim.highestBidder;
-                    item.soldPrice = claim.highestBid;
-                    item.status = Status.OUT;
+                    id.rightToClaim = c.highestBidder;
+                    id.soldPrice = c.highestBid;
+                    id.status = Status.OUT;
                 }
             }
 
             unchecked {
-                index++;  
+                ++i;  
             }
         }
 
         emit ClaimingRightsAssigned(
-            _label
+            label_
         );
     }
 
+    //escrow
+    //1. transfer instead of approve
+    //2. keep money in contract till the end
+    //3. If a new bid comes, money becomes free to claim or added to.
+    //4. Highest bidder's fee becomes locked.
+    //5. How about gas fees? - well it's polygon - or we reward them with free gas when they increase bids - to encourage them to compete/ also incentivise the bids according to the weights and pools
+
+    //claimFund(claim_)
+    //claim = #_auction[claim_];
+    //claim.lastBid = claim.highestBid;
+    //if(claim.highestBidder != msg.sender && freeCollateralLocked[msg.sender][hash])
+    //bytes32 hash = abi.encode(keccak256(#_auction[claim_], claim.lastBid));
+    //mapping(address => mapping(bool => bytes32) hashRecord; hashRecord[msg.sender][true] = hash;
+    //iten safe.   //hash index storage  id = 500... if(freeColllateral[msg.sender][hash])                      
+    // (, uint256 amount_) = abi.decode(hash);
+    //collateralLocked[msg.sender][hash] = false;
+    //matic.transferFrom(msg.sender, amount_);
+    // collaterals[address]
+    // uint256 index -- first is 0, second: 1. increment
+
+    //bytes32 hash = abi.encode(keccak256(_#auction[claim_], claim.lastBid));
+    //uint256 userIndex = _#freeCollateral[msg.sender]._index;
+    //_#freeCollateral[msg.sender] = Collateral(userIndex, _#collateralHash[userIndex][true] = hash)
+    //index++; public 60 per user;
+    // uint256 userTxs = _#freeCollateral[msg.sender]._index;
+    // for(uint256 i; i < userTxs;){
+    //    if(_#freeCollateral[msg.sender]._#collateralHash[i][true]){
+    //    (, uint256 amount_) = abi.decode(_#collateralHash[i][true]);
+    //     _#collateralHash[index][false];
+    //      transferFrom(address(this), msg.sender, amount_)
+    //      unchecked{i++;} 
+    // }
+    //}
+
+    //withdrawable[msg.sender][byteH] = true;
+    // mapping(address => Collateral) freeCollateral;
+    // struct Collateral{ uint256 index, mapping(uint256 => mapping(bool => byte32))collateralHash }
+    //if deposit... claim in place of byte32 
+    //256 wrap the whole of the auction map in 
+
+    
+    //address currentHolder = claim.highestBidder;
+    //_ping(currentHolder) - push notification./or email
+    //
 
     ///@notice Allows highest bidder to claim their Nft
     ///@dev Check if there's any excess use of memory/gas 
@@ -392,17 +838,52 @@ contract FairWheel is PoolStorage, RandomGenerator {
     ///@param _claim The Id of the auction won
     ///@param _nftRecipient A recipient address where the Nft would be transferred to
     function claimNft(
-        uint8 _label, 
-        uint256 _claim, 
-        address _nftRecipient
+        uint8 label_, 
+        uint256 claim_, 
+        address nftRecipient_
     ) external {
-        Auction memory claim = _auctions[_claim];
-        require(msg.sender == claim.highestBidder, "WRONG_AUCTION_ID");
-        assignClaimingRights(_label);
+        Auction memory c = #_auctions[claim_];
+        
+        ///@dev Checks if auction is still on - Auction time is 24 hrs
+        if(_timeLeft(claim_) != 0) revert("still on");
+
+        require(msg.sender == c.highestBidder, "WRONG_AUCTION_ID");
+        //assignClaimi
+
+        uint256 clubListIds = #_clubListIds.length;
+        uint256 itemList;
+
+        for(uint256 i; i < clubListIds;){
+            if(c.club == #group[i]){
+                itemList = _clubListIds[i];
+                break;
+            }
+            unchecked{++i;}
+        }
+
+        uint256 randomId = _deliverItem(itemList, 0, label_);
 
         uint256 i;
-        while(i < _itemId){
-            Item memory item = _items[i];
+        while(i < itemList){
+            
+        if(label_ == 0){
+            Item storage item = #_clubAList[randomId];
+                uint256 randomId = _deliverItem(label_);
+                Item storage id = _items[randomId];
+            item.status = Status.OUT;
+
+                if(uint8(item.label) == _label && item.status == Status.ON_LIST){
+                    uint256 randomId = _deliverItem(label_);
+                    Item storage id = _items[randomId];
+                    item.status = Status.OUT;
+                }
+            }
+            if(label_ == 1){Item memory item = #_clubBList[i];}
+            if(label_ == 2){Item memory item = #_clubCList[i];}
+            if(label_ == 3){Item memory item = #_clubDList[i];}
+            if(label_ == 4){Item memory item = #_clubEList[i];}
+            if(label_ == 5){Item memory item = #_clubFList[i];}
+            if(label_ == 6 || label_ == 7){Item memory item = #_clubGList[i];}
 
             if(uint8(_items[i].label) == _label && 
             item.status == Status.OUT){
@@ -459,39 +940,39 @@ contract FairWheel is PoolStorage, RandomGenerator {
     ///     need to save gas too - current gas is almost 94k
     ///@param _item - The address of the NFT
     ///@return item.label - the assigned label
-    function _addLabel(uint256 _item) internal returns(Tag){
-        Item storage item = _items[_item];
+    function _addLabel(uint256 askPrice_) internal returns(Tag){
+        //Item storage item = _items[_item];
         uint256[10] memory priceTags = _priceTags;
  
-        if(item.askPrice < priceTags[0]){
-            return Tag.TIER_ONE;
+        if(askPrice_ < priceTags[0]){
+            return Tag.TIER_ONE;  //tier1Strategy;
         }
         if(item.askPrice >= priceTags[1]){
-            return Tag.TIER_TWO;  
+            return Tag.TIER_TWO; //tier2Strategy;  
         } 
         if(item.askPrice >= priceTags[2]){
-            return Tag.TIER_THREE;
+            return Tag.TIER_THREE; //tier3Strategy;
         } 
         if(item.askPrice >= priceTags[3]){
-            return Tag.TIER_FOUR;
+            return Tag.TIER_FOUR; // tier4Strategy;
         } 
         if(item.askPrice >= priceTags[4]){
-            return Tag.TIER_FIVE;
+            return Tag.TIER_FIVE; //tier5Strategy;
         }  
         if(item.askPrice >= priceTags[5]){
-            return Tag.TIER_SIX;
+            return Tag.TIER_SIX; //tier6Strategy;
         } 
         if(item.askPrice >= priceTags[6]){
-            return Tag.TIER_SEVEN;
+            return Tag.TIER_SEVEN; //tier7Strategy;
         } 
         if(item.askPrice >= priceTags[7]){
-            return Tag.TIER_EIGHT;
+            return Tag.TIER_EIGHT; //tier8Strategy;
         } 
         if(item.askPrice >= priceTags[8]){
-            return Tag.TIER_NINE;
+            return Tag.TIER_NINE; //tier9Strategy;
         } 
         if(item.askPrice >= priceTags[9]){
-            return Tag.BOTTOM_T;
+            return Tag.BOTTOM_T; //bottom_TStrategy;
         }
         
        // item.label = Tag.TIER_ONE;
@@ -560,21 +1041,47 @@ contract FairWheel is PoolStorage, RandomGenerator {
 
     ///@notice Generates a random itemId through the RandomGenerator
     ///@dev Check if there's any excess use of memory/gas
-    function _deliverItem(uint8 _label) internal returns(uint256) {
-        uint256 i; uint256 j; 
-        
-        uint256[] memory itemsList = new uint[](j);
+    function _deliverItem(uint256 itemId_, uint256 n_, Tag label_) internal returns(uint256[] calldata onList) {
+           
+        uint256 i; uint256 j;
 
-        while(i < _itemId){
-            if(uint8(_items[i].label) == _label){
-                if(_items[i].status == Status.ON_LIST){
-                    itemsList[j] = i;
-                    j++;
+        //declared an "onList" array to store the Ids of items 
+        //with the "_label" and "ON_LIST" tags
+        onList = new uint256[](j);
+
+        while(i < itemId_){
+            if(n_ == 0){
+               Item memory item = _clubAList[i]; 
+            }
+            if(n_ == 1){
+               Item memory item = _clubBList[i]; 
+            }
+            if(n_ == 2){
+               Item memory item = _clubCList[i]; 
+            }
+            if(n_ == 3){
+               Item memory item = _clubDList[i]; 
+            }
+            if(n_ == 4){
+               Item memory item = _clubEList[i]; 
+            }
+            if(n_ == 5){
+               Item memory item = _clubFList[i]; 
+            }
+            if(n_ == 6 || n_ == 7){
+               Item memory item = _clubGList[i]; 
+            }
+
+
+            if(uint8(item.label) == label_){
+                if(item.status == Status.ON_LIST){
+                    onList[j] = i;
+                    ++j;
                 }
             }
 
             unchecked {
-                i++;  
+                ++i;  
             }
         }
 
@@ -827,3 +1334,13 @@ contract FairWheel is PoolStorage, RandomGenerator {
     }
 
 } 
+/*
+contract AccessPool {
+    function see(address payable addr) public returns(bool, bytes memory) {
+        FairWheel fair = FairWheel(addr);
+        bytes memory txd = abi.encodeWithSignature("setPriceLimit(uint64)", 20);
+
+        return address(fair).call(txd);
+        //return address(fair).call{setPriceLimit(20)};
+    }
+}*/

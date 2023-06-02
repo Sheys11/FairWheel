@@ -1,4 +1,4 @@
-# FairWheel
+# FairWheel (Work In Progress)
 A non-custodial NFT marketplace that uses a gamified auction mechanism to sell NFTs to buyers.
 
 > ## Table of contents

@@ -20,14 +20,27 @@ pragma solidity^0.8.17;
         BOTTOM_T    //0.01 - 0.5 ether    0010000000000000000
     }
 
+    enum Group {
+        A-CLUB,
+        B-CLUB,
+        C-CLUB,
+        D-CLUB,
+        E-CLUB,
+        F-CLUB,
+        INDEPENDENT_PIECE,
+        UNIDENTIFIED
+    }
+
     struct Item {
-        uint tokenId;
-        uint askPrice;
-        uint soldPrice;
+        uint256 tokenId;
+        uint128 askPrice;
+        uint128 soldPrice;
         Tag label;
+        bytes4 clubId;
+        //poolStrategy;
         Status status;
         address seller;
-        address rightToClaim;
+       // address rightToClaim;
         address nftRecipient;
         address nftContract;
     }
@@ -35,6 +48,8 @@ pragma solidity^0.8.17;
     struct Auction {
         uint256 highestBid;
         Tag label;
+        bytes4 clubId;
+        address strategy;
         uint32 auctionTimeLeft;
         address highestBidder;
     }
