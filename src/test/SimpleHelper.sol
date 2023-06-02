@@ -1,33 +1,31 @@
 //SPDX-License-Identifier: MIT
 pragma solidity^0.8.17;
 
+import "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
-import {PoolStorage} from './PoolStorage.sol';
+import {PoolStorage} from '../PoolStorage.sol';
 
 /**
- * @title RandomGenerator
+ * @title SimpleHelper
  * @dev The random object generator for FairWheel Nft Marketplace that inherits chainlink's VRF.
  * This contract receives values in an array and picks a random value from the array
  * This contract might be incomplete/unoptimized and could need some other useful variables
  */
 
-contract RandomGenerator is VRFConsumerBaseV2, PoolStorage {
+contract SimpleHelper is VRFConsumerBaseV2, PoolStorage {
     uint8 private constant ROLL_IN_PROGRESS = 0x22;
 
     VRFCoordinatorV2Interface COORDINATOR;
+    LinkTokenInterface immutable LINKTOKEN;
 
     // Your subscription ID.
-    uint64 s_subscriptionId;
-
-    // Goerli coordinator. For other networks,
-    // see https://docs.chain.link/docs/vrf-contracts/#configurations
-    address vrfCoordinator = 0x2Ca8E0C643bDe4C2E08ab1fA0da3401AdAD7734D;
+    uint64 immutable s_subscriptionId;
 
     // The gas lane to use, which specifies the maximum gas price to bump to.
     // For a list of available gas lanes on each network,
     // see https://docs.chain.link/docs/vrf-contracts/#configurations
-    bytes32 s_keyHash = 0x79d3d8832d904592c0bf9818b621522c988bb8b0c05cdc3b15aea1b6e8db0c15;
+    bytes32 immutable s_keyHash;
 
     // Depends on the number of requested values that you want sent to the
     // fulfillRandomWords() function. Storing each word costs about 20,000 gas,
@@ -35,21 +33,22 @@ contract RandomGenerator is VRFConsumerBaseV2, PoolStorage {
     // this limit based on the network that you select, the size of the request,
     // and the processing of the callback request in the fulfillRandomWords()
     // function.
-    uint32 callbackGasLimit = 40000;
+    uint32 immutable callbackGasLimit = 40000;
 
     // The default is 3, but you can set this higher.
-    uint16 requestConfirmations = 3;
+    uint16 immutable requestConfirmations = 3;
 
     // For this example, retrieve 1 random value in one request.
     // Cannot exceed VRFCoordinatorV2.MAX_NUM_WORDS.
-    uint32 numWords = 1;
+    uint32 public immutable numWords = 1;
 
     address s_owner;
 
     ///@dev An array of objects
-    uint256[] _objectsId;
+    uint256[] public _objectsId;
 
     uint256[] public s_randomWords;
+    uint256 public s_requestId;
 
     // map callers to requestIds
     mapping(uint256 => address) private s_callers;
@@ -66,8 +65,15 @@ contract RandomGenerator is VRFConsumerBaseV2, PoolStorage {
      *
      * @param subscriptionId_ subscription id that this consumer contract can use
      */
-    constructor(uint64 subscriptionId_) VRFConsumerBaseV2(vrfCoordinator) {
+    constructor(
+        uint64 subscriptionId_,
+        address vrfCoordinator,
+        address link,
+        bytes32 keyHash
+    ) VRFConsumerBaseV2(vrfCoordinator) {
         COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
+        LINKTOKEN = LinkTokenInterface(link);
+        s_keyHash = keyHash;
         s_owner = msg.sender;
         s_subscriptionId = subscriptionId_;
     }
@@ -80,10 +86,10 @@ contract RandomGenerator is VRFConsumerBaseV2, PoolStorage {
      *
      * @param _caller address of the roller
      */
-    function requestRandomness(address _caller) internal returns (uint256 requestId) {
+    function requestRandomness(address _caller) public returns (uint256 requestId) {
         require(s_results[_caller] == 0, "Already called");
         // Will revert if subscription is not set and funded.
-        requestId = COORDINATOR.requestRandomWords(
+        s_requestId = COORDINATOR.requestRandomWords(
             s_keyHash,
             s_subscriptionId,
             requestConfirmations,
@@ -91,9 +97,9 @@ contract RandomGenerator is VRFConsumerBaseV2, PoolStorage {
             numWords
         );
 
-        s_callers[requestId] = _caller;
+        s_callers[s_requestId] = _caller;
         s_results[_caller] = ROLL_IN_PROGRESS;
-        emit RandRequested(requestId, _caller);
+        emit RandRequested(s_requestId, _caller);
     }
 
     /**
@@ -119,9 +125,13 @@ contract RandomGenerator is VRFConsumerBaseV2, PoolStorage {
         emit RandGenerated(requestId, objectValue);
     }
 
-    function getObjectsNum() private view returns(uint256) {
+    function getObjectsNum() public view returns(uint256) {
         return _objectsId.length;
     } 
+    
+   /* function getRandomWord() public {
+        return s_random[0]
+    }*/
 
     /**
      * @notice Generates a random object(uint) from a list of an array passed into the function
@@ -144,12 +154,26 @@ contract RandomGenerator is VRFConsumerBaseV2, PoolStorage {
         return rand;
     }
 
+    function deleteResult(address _searcher) public returns(bool) {
+        s_results[_searcher] = 0;
+        return true;
+    }
+    
+    function getResults(uint256 requestId) public returns(uint256){
+        return s_results[s_callers[requestId]];
+    }
+
+    function addObjects(uint256[] calldata _list) public returns(bool) {
+        _objectsId = _list;
+        return true;
+    }
+
     /**
      * @notice Get the random object assigned to the receiver
      * @param _receiver address
      * @return object id as an uint
      */
-    function checkStatus(address _receiver) internal view returns(uint256) {
+    function checkStatus(address _receiver) public view returns(uint256) {
         require(s_results[_receiver] != 0, 'Rand not requested');
         require(s_results[_receiver] != ROLL_IN_PROGRESS, 'Roll in progress');
         return getStatus(s_results[_receiver]);
@@ -164,7 +188,7 @@ contract RandomGenerator is VRFConsumerBaseV2, PoolStorage {
         return _objectsId[_id];
     }
 
-    function _removeObjects() internal {
+    function _removeObjects() public {
         uint256[] storage objectArray = _objectsId;
 
         uint i;
